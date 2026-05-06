@@ -567,13 +567,45 @@
             }
         }
 
+// --- 強化版 Web MIDI 處理與除錯邏輯 ---
         if (navigator.requestMIDIAccess) {
-            navigator.requestMIDIAccess().then((midiAccess) => {
-                document.getElementById('status').textContent = "✅ MIDI 已連接。"; document.getElementById('status').className = "connected";
-                for (let input of midiAccess.inputs.values()) input.onmidimessage = onMIDIMessage;
-                midiAccess.onstatechange = (e) => { if (e.port.type === 'input' && e.port.state === 'connected') e.port.onmidimessage = onMIDIMessage; };
-            }).catch((err) => { document.getElementById('status').textContent = "❌ 無法存取 MIDI：" + err; });
+            // 明確宣告不需要 sysex (系統排除訊息)，這能減少權限阻擋的機率
+            navigator.requestMIDIAccess({ sysex: false }).then((midiAccess) => {
+                const inputs = midiAccess.inputs;
+                
+                if (inputs.size === 0) {
+                    document.getElementById('status').textContent = "⚠️ 找不到 MIDI 裝置，請檢查線材或是否被其他軟體佔用。";
+                    document.getElementById('status').className = "error";
+                } else {
+                    document.getElementById('status').textContent = "✅ MIDI 已連接。";
+                    document.getElementById('status').className = "connected";
+                }
+
+                for (let input of inputs.values()) {
+                    input.onmidimessage = onMIDIMessage;
+                }
+
+                // 監聽鍵盤拔插事件
+                midiAccess.onstatechange = (e) => { 
+                    if (e.port.type === 'input') {
+                        if (e.port.state === 'connected') {
+                            e.port.onmidimessage = onMIDIMessage;
+                            document.getElementById('status').textContent = `✅ 已連接: ${e.port.name}`;
+                            document.getElementById('status').className = "connected";
+                        } else {
+                            document.getElementById('status').textContent = "⚠️ MIDI 裝置已拔除。";
+                            document.getElementById('status').className = "error";
+                        }
+                    }
+                };
+            }).catch((err) => { 
+                // 如果被阻擋，這裡會印出詳細原因
+                document.getElementById('status').textContent = "❌ MIDI 存取失敗：" + err.message; 
+                document.getElementById('status').className = "error";
+                console.error("MIDI 錯誤詳細資訊:", err);
+            });
+        } else {
+            // Safari 會走到這一步
+            document.getElementById('status').textContent = "❌ 您的瀏覽器 (如 Safari) 原生不支援 Web MIDI API。請改用 Chrome 或 Edge。";
+            document.getElementById('status').className = "error";
         }
-    </script>
-</body>
-</html>
