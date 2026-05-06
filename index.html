@@ -2,7 +2,9 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>音樂學習整合平台 - 音階與運指大師版</title>
+    <title>音樂學習整合平台 - 完整無錯最終版</title>
+    <!-- 解決找不到 favicon.ico 產生的 404 報錯 -->
+    <link rel="icon" href="data:,">
     <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.2/build/cjs/vexflow.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
@@ -12,6 +14,7 @@
         .global-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         #status { padding: 10px; border-radius: 5px; font-weight: bold; background: #e2e3e5; color: #383d41; flex-grow: 1; margin-right: 15px; }
         .connected { background: #d4edda !important; color: #155724 !important; }
+        .error { background: #f8d7da !important; color: #721c24 !important; }
         button { padding: 8px 16px; font-size: 16px; font-weight: bold; cursor: pointer; border: none; border-radius: 5px; transition: background 0.3s; }
         #audio-btn { background-color: #007bff; color: white; }
         #audio-btn:disabled { background-color: #28a745; cursor: default; }
@@ -38,7 +41,6 @@
         #practice-btn.active { background-color: #f44336; }
         .score-board { font-size: 18px; font-weight: bold; color: #1565c0; }
         
-        /* 畫布區塊加寬以容納音階 */
         .canvas-container { display: flex; justify-content: center; align-items: center; min-height: 220px; background: #fffdf5; border: 1px solid #ddd; border-radius: 5px; flex-direction: column; padding: 20px;}
         .hint-box { background: #fff3cd; color: #856404; padding: 10px; border-radius: 5px; border: 1px solid #ffeeba; margin-top: 15px; font-size: 16px; display: none; text-align: center; font-weight: bold; max-width: 90%;}
         .feedback-msg { font-size: 20px; font-weight: bold; text-align: center; margin-top: 10px; min-height: 30px;}
@@ -74,7 +76,7 @@
     <div class="card">
         <div class="global-controls">
             <div id="status">檢查 MIDI 支援與裝置中...</div>
-            <button id="audio-btn">🔊 1. 點擊啟用音源</button>
+            <button id="audio-btn">🔊 1. 點擊解鎖音源</button>
         </div>
 
         <div class="tabs-nav">
@@ -115,7 +117,7 @@
                         <option value="scale_harmonic_minor">和聲小調音階 (Harmonic Minor)</option>
                         <option value="scale_penta_major">大調五聲音階 (Major Pentatonic)</option>
                     </select>
-                    <label><input type="checkbox" id="include-black-keys"> 包含黑鍵(根音)</label>
+                    <label><input type="checkbox" id="include-black-keys"> 包含黑鍵/複雜調號</label>
                 </div>
                 <button id="practice-btn" disabled>🎯 2. 開始練習</button>
                 <div class="score-board">連對: <span id="streak-display">0</span></div>
@@ -206,7 +208,7 @@
             });
         });
 
-        // --- Tone.js ---
+        // --- Tone.js 音源 ---
         const VF = Vex.Flow;
         const synth = new Tone.PolySynth(Tone.Synth, { oscillator: { type: "triangle" }, envelope: { attack: 0.02, decay: 0.1, sustain: 0.4, release: 1.5 } }).toDestination();
         const clickHigh = new Tone.MembraneSynth({ pitchDecay: 0.008, octaves: 2, volume: -10 }).toDestination();
@@ -224,11 +226,10 @@
         function logMessage(msg) { document.getElementById('log').innerHTML = msg + "<br>" + document.getElementById('log').innerHTML; }
         function playDictSound(duration) { if (isAudioUnlocked) synth.triggerAttackRelease("C4", duration, Tone.now()); }
 
-        // --- VexFlow 動態寬度繪圖引擎 ---
+        // --- VexFlow 繪圖引擎 ---
         function drawEmptyStave(divId, clef, customWidth = 200) {
             const div = document.getElementById(divId); div.innerHTML = "";
             const renderer = new VF.Renderer(div, VF.Renderer.Backends.SVG); 
-            // 畫布寬度必須比五線譜寬度大一點才不會被裁切
             renderer.resize(customWidth + 60, 150);
             const context = renderer.getContext(); 
             const stave = new VF.Stave(30, 20, customWidth).addClef(clef).setContext(context).draw();
@@ -241,7 +242,6 @@
             return { key: `${noteNames[noteNumber % 12]}/${Math.floor(noteNumber / 12) - 1}`, accidental: accidentals[noteNumber % 12] };
         }
 
-        // 繪製「和弦」(所有音在同一拍)
         function drawNotesOnStave(divId, midiNotesArray, clef = 'treble') {
             try {
                 const { context, stave } = drawEmptyStave(divId, clef, 200);
@@ -259,10 +259,8 @@
             } catch (e) { console.log(e); }
         }
 
-        // 繪製「旋律/音階」(每個音佔一拍，橫向展開)
         function drawMelodyOnStave(divId, midiNotesArray, clef = 'treble') {
             try {
-                // 根據音符數量動態計算需要的寬度，避免音階擠在一起
                 const reqWidth = Math.max(250, midiNotesArray.length * 40);
                 const { context, stave } = drawEmptyStave(divId, clef, reqWidth);
                 if (!midiNotesArray || midiNotesArray.length === 0) return;
@@ -274,17 +272,13 @@
                     if (vfData.accidental) note.addModifier(new VF.Accidental(vfData.accidental), 0);
                     notes.push(note);
                 });
-
-                // 創建一組容納所有音符的 Voice
                 const voice = new VF.Voice({ num_beats: notes.length, beat_value: 4 }).addTickables(notes);
                 new VF.Formatter().joinVoices([voice]).format([voice], reqWidth - 50); 
                 voice.draw(context, stave);
             } catch (e) { console.log(e); }
         }
 
-
-        // --- 字典區邏輯 (保留原先功能) ---
-        // (此區塊邏輯與前一版完全相同，為節省空間略去細節解說)
+        // --- 級數推算字典 ---
         const scalesFormula = {
             'major': [{ roman: 'I', int: 0, qual: 'Major', ints: [0, 4, 7] }, { roman: 'ii', int: 2, qual: 'Minor', ints: [0, 3, 7] }, { roman: 'iii', int: 4, qual: 'Minor', ints: [0, 3, 7] }, { roman: 'IV', int: 5, qual: 'Major', ints: [0, 4, 7] }, { roman: 'V', int: 7, qual: 'Major', ints: [0, 4, 7] }, { roman: 'vi', int: 9, qual: 'Minor', ints: [0, 3, 7] }, { roman: 'vii°',int: 11, qual: 'Dim', ints: [0, 3, 6] }],
             'minor': [{ roman: 'i', int: 0, qual: 'Minor', ints: [0, 3, 7] }, { roman: 'ii°', int: 2, qual: 'Dim', ints: [0, 3, 6] }, { roman: 'III', int: 3, qual: 'Major', ints: [0, 4, 7] }, { roman: 'iv', int: 5, qual: 'Minor', ints: [0, 3, 7] }, { roman: 'v', int: 7, qual: 'Minor', ints: [0, 3, 7] }, { roman: 'VI', int: 8, qual: 'Major', ints: [0, 4, 7] }, { roman: 'VII', int: 10, qual: 'Major', ints: [0, 4, 7] }]
@@ -334,8 +328,7 @@
         }
         document.getElementById('prog-1645-btn').onclick = () => playProgression([1, 6, 4, 5]); document.getElementById('prog-4536-btn').onclick = () => playProgression([4, 5, 3, 6]); document.getElementById('prog-251-btn').onclick = () => playProgression([2, 5, 1]); document.getElementById('prog-minor-btn').onclick = () => playProgression([4, 5, 1]);
 
-
-        // --- 節拍器與測驗引擎 ---
+        // --- 節拍器 ---
         let timeSignature = 4; let currentBeat = 0; let isMetroPlaying = false;
         Tone.Transport.scheduleRepeat((time) => {
             Tone.Draw.schedule(() => {
@@ -352,160 +345,42 @@
         document.getElementById('bpm-slider').oninput = (e) => { bpm = e.target.value; document.getElementById('bpm-display').textContent = bpm; Tone.Transport.bpm.value = bpm; };
         document.getElementById('time-sig-select').onchange = (e) => { timeSignature = parseInt(e.target.value); currentBeat = 0; };
 
-        // 狀態機變數
-        let isPracticeMode = false; 
-        let isSequentialMode = false; // 是否為音階循序輸入模式
-        let currentTargetNotes = []; // 目標音符陣列
-        let sequenceProgress = 0; // 記錄目前彈到音階的第幾個音
-        let score = 0; let streak = 0;
+        // --- 測驗系統核心邏輯 ---
+        let isPracticeMode = false; let isSequentialMode = false; let currentTargetNotes = []; let sequenceProgress = 0; let score = 0; let streak = 0;
         
         function generateQuestion() {
-    const type = document.getElementById('practice-type').value;
-    const incBlack = document.getElementById('include-black-keys').checked;
-    
-    // 重置狀態
-    isSequentialMode = false;
-    sequenceProgress = 0;
-    
-    let pool = [60, 62, 64, 65, 67, 69, 71, 72, 74, 76, 77, 79];
-    if (incBlack) pool = pool.concat([61, 63, 66, 68, 70, 73, 75, 78]);
+            const type = document.getElementById('practice-type').value;
+            const incBlack = document.getElementById('include-black-keys').checked;
+            
+            isSequentialMode = false; sequenceProgress = 0;
+            
+            let pool = [60, 62, 64, 65, 67, 69, 71, 72, 74, 76, 77, 79];
+            if (incBlack) pool = pool.concat([61, 63, 66, 68, 70, 73, 75, 78]);
 
-    // 【修復重點】在這裡統一宣告所有會用到的變數，後面直接賦值（不加 let）
-    let intervals = []; 
-    let title = ""; 
-    let fingering = "";
-    
-    // --- 1. 處理音階模式 ---
-    if (type.startsWith('scale_')) {
-        isSequentialMode = true;
-        const rootNote = pool.filter(n => n >= 60 && n <= 65)[Math.floor(Math.random() * pool.filter(n => n >= 60 && n <= 65).length)];
-        const baseNote = (rootNote % 12) + 60;
-        
-        // ... 指法字典保持原樣 ...
-        const majorFingerings = { 60: "1-2-3-1-2-3-4-5", 61: "2-3-1-2-3-4-1-2", 62: "1-2-3-1-2-3-4-5", 63: "3-1-2-3-4-1-2-3", 64: "1-2-3-1-2-3-4-5", 65: "1-2-3-4-1-2-3-4", 66: "2-3-4-1-2-3-1-2", 67: "1-2-3-1-2-3-4-5", 68: "3-4-1-2-3-1-2-3", 69: "1-2-3-1-2-3-4-5", 70: "4-1-2-3-1-2-3-4", 71: "1-2-3-1-2-3-4-5" };
-        const minorFingerings = { 60: "1-2-3-1-2-3-4-5", 61: "3-4-1-2-3-1-2-3", 62: "1-2-3-1-2-3-4-5", 63: "3-1-2-3-4-1-2-3", 64: "1-2-3-1-2-3-4-5", 65: "1-2-3-4-1-2-3-4", 66: "3-4-1-2-3-1-2-3", 67: "1-2-3-1-2-3-4-5", 68: "3-4-1-2-3-1-2-3", 69: "1-2-3-1-2-3-4-5", 70: "2-1-2-3-1-2-3-4", 71: "1-2-3-1-2-3-4-5" };
+            // 在最外層宣告，修復 SyntaxError 致命錯誤
+            let intervals = []; let title = ""; let fingering = "";
 
-        switch(type) {
-            case 'scale_major': intervals = [0, 2, 4, 5, 7, 9, 11, 12]; title = "大調音階"; fingering = `右手: ${majorFingerings[baseNote]}`; break;
-            case 'scale_natural_minor': intervals = [0, 2, 3, 5, 7, 8, 10, 12]; title = "自然小調音階"; fingering = `右手: ${minorFingerings[baseNote]}`; break;
-            case 'scale_harmonic_minor': intervals = [0, 2, 3, 5, 7, 8, 11, 12]; title = "和聲小調音階"; fingering = `右手: ${minorFingerings[baseNote]} (注意第7與第8音的增二度)`; break;
-            case 'scale_penta_major': intervals = [0, 2, 4, 7, 9, 12]; title = "大調五聲音階"; fingering = "右手: 1-2-3-1-2-3"; break;
-        }
-        
-        currentTargetNotes = intervals.map(i => rootNote + i);
-        drawMelodyOnStave('vexflow-canvas', currentTargetNotes, 'treble');
-        document.getElementById('hint-box').innerHTML = `💡 <b>${getNoteName(rootNote)} ${title}</b><br>📝 請依序「單音」彈奏。<br>建議運指：${fingering}`;
-        document.getElementById('hint-box').style.display = 'block';
-        document.getElementById('feedback-msg').textContent = `🎹 等待輸入 (0/${currentTargetNotes.length})...`; 
-        document.getElementById('feedback-msg').className = "msg-waiting";
-    }
-    // --- 2. 處理級數推算 ---
-    else if (type === 'degree_progression') {
-        let keysPool = [{name: 'C 大調', root: 60}, {name: 'G 大調', root: 67}, {name: 'F 大調', root: 65}];
-        if (incBlack) keysPool = keysPool.concat([{name: 'D 大調', root: 62}, {name: 'Bb 大調', root: 58}, {name: 'A 大調', root: 69}]);
-        const targetKey = keysPool[Math.floor(Math.random() * keysPool.length)];
-        const targetDegree = scalesFormula['major'][Math.floor(Math.random() * 6)];
-        
-        let chordRoot = targetKey.root + targetDegree.int; if (chordRoot > 72) chordRoot -= 12;
-        currentTargetNotes = targetDegree.ints.map(int => chordRoot + int);
-        
-        drawEmptyStave('vexflow-canvas', 'treble', 200);
-        document.getElementById('hint-box').innerHTML = `<div style="font-size: 20px; margin-bottom: 10px;">請推算並彈奏：</div><div style="font-size: 28px; color: #e91e63;">${targetKey.name} 的 ${targetDegree.roman} 級和弦</div><div style="font-size: 14px; margin-top: 10px; color: #666;">(提示：${targetKey.name} 的 ${targetDegree.roman} 級是 ${getNoteName(chordRoot)}${targetDegree.qual==='Minor'?'m':''})</div>`;
-        document.getElementById('hint-box').style.display = 'block';
-        document.getElementById('feedback-msg').textContent = "🎹 請在鍵盤上彈出該和弦..."; document.getElementById('feedback-msg').className = "msg-waiting";
-    }
-    // --- 3. 處理一般和弦判讀 ---
-    else {
-        if (type === 'single') { currentTargetNotes = [pool[Math.floor(Math.random() * pool.length)]]; document.getElementById('hint-box').style.display = 'none'; } 
-        else {
-            const rootNote = pool.filter(n => n <= 67)[Math.floor(Math.random() * pool.filter(n => n <= 67).length)];
-            switch(type) {
-                case 'chord_major': intervals = [0,4,7]; title = "大三和弦"; break;
-                case 'chord_minor': intervals = [0,3,7]; title = "小三和弦"; break;
-                case 'chord_maj7': intervals = [0,4,7,11]; title = "大七和弦"; break;
-                case 'chord_dom7': intervals = [0,4,7,10]; title = "屬七和弦"; break;
-                case 'chord_min7': intervals = [0,3,7,10]; title = "小七和弦"; break;
-            }
-            currentTargetNotes = intervals.map(i => rootNote + i);
-            document.getElementById('hint-box').innerHTML = `💡 <b>${getNoteName(rootNote)} ${title}</b>`;
-            document.getElementById('hint-box').style.display = 'block';
-        }
-        drawNotesOnStave('vexflow-canvas', currentTargetNotes, 'treble');
-        document.getElementById('feedback-msg').textContent = "🎹 請彈奏畫面上的音符..."; document.getElementById('feedback-msg').className = "msg-waiting";
-    }
-}
-// --- 指法字典建置 ---
-                // 大調右手單八度指法 (MIDI 60=C 到 71=B)
-                const majorFingerings = {
-                    60: "1-2-3-1-2-3-4-5", // C 大調
-                    61: "2-3-1-2-3-4-1-2", // Db (黑鍵起手)
-                    62: "1-2-3-1-2-3-4-5", // D 大調
-                    63: "3-1-2-3-4-1-2-3", // Eb (黑鍵起手)
-                    64: "1-2-3-1-2-3-4-5", // E 大調
-                    65: "1-2-3-4-1-2-3-4", // F 大調 (特例：第四音為黑鍵 Bb，拇指不彈黑鍵)
-                    66: "2-3-4-1-2-3-1-2", // Gb (黑鍵起手)
-                    67: "1-2-3-1-2-3-4-5", // G 大調
-                    68: "3-4-1-2-3-1-2-3", // Ab (黑鍵起手)
-                    69: "1-2-3-1-2-3-4-5", // A 大調
-                    70: "4-1-2-3-1-2-3-4", // Bb (黑鍵起手)
-                    71: "1-2-3-1-2-3-4-5"  // B 大調
-                };
-
-                // 小調右手單八度指法 (適用於自然小調與和聲小調)
-                const minorFingerings = {
-                    60: "1-2-3-1-2-3-4-5", // Cm
-                    61: "3-4-1-2-3-1-2-3", // C#m
-                    62: "1-2-3-1-2-3-4-5", // Dm
-                    63: "3-1-2-3-4-1-2-3", // Ebm
-                    64: "1-2-3-1-2-3-4-5", // Em
-                    65: "1-2-3-4-1-2-3-4", // Fm
-                    66: "3-4-1-2-3-1-2-3", // F#m
-                    67: "1-2-3-1-2-3-4-5", // Gm
-                    68: "3-4-1-2-3-1-2-3", // G#m
-                    69: "1-2-3-1-2-3-4-5", // Am
-                    70: "2-1-2-3-1-2-3-4", // Bbm
-                    71: "1-2-3-1-2-3-4-5"  // Bm
-                };
-
-                // 將隨機抽到的根音轉換成 60~71 的基準區間，以對應字典
+            if (type.startsWith('scale_')) {
+                isSequentialMode = true;
+                const rootNote = pool.filter(n => n >= 60 && n <= 65)[Math.floor(Math.random() * pool.filter(n => n >= 60 && n <= 65).length)];
                 const baseNote = (rootNote % 12) + 60;
-
-                let intervals = []; let title = ""; let fingering = "";
                 
+                const majorFingerings = { 60: "1-2-3-1-2-3-4-5", 61: "2-3-1-2-3-4-1-2", 62: "1-2-3-1-2-3-4-5", 63: "3-1-2-3-4-1-2-3", 64: "1-2-3-1-2-3-4-5", 65: "1-2-3-4-1-2-3-4", 66: "2-3-4-1-2-3-1-2", 67: "1-2-3-1-2-3-4-5", 68: "3-4-1-2-3-1-2-3", 69: "1-2-3-1-2-3-4-5", 70: "4-1-2-3-1-2-3-4", 71: "1-2-3-1-2-3-4-5" };
+                const minorFingerings = { 60: "1-2-3-1-2-3-4-5", 61: "3-4-1-2-3-1-2-3", 62: "1-2-3-1-2-3-4-5", 63: "3-1-2-3-4-1-2-3", 64: "1-2-3-1-2-3-4-5", 65: "1-2-3-4-1-2-3-4", 66: "3-4-1-2-3-1-2-3", 67: "1-2-3-1-2-3-4-5", 68: "3-4-1-2-3-1-2-3", 69: "1-2-3-1-2-3-4-5", 70: "2-1-2-3-1-2-3-4", 71: "1-2-3-1-2-3-4-5" };
+
                 switch(type) {
-                    case 'scale_major': 
-                        intervals = [0, 2, 4, 5, 7, 9, 11, 12]; 
-                        title = "大調音階"; 
-                        fingering = `右手: ${majorFingerings[baseNote]}`; 
-                        break;
-                    case 'scale_natural_minor': 
-                        intervals = [0, 2, 3, 5, 7, 8, 10, 12]; 
-                        title = "自然小調音階"; 
-                        fingering = `右手: ${minorFingerings[baseNote]}`; 
-                        break;
-                    case 'scale_harmonic_minor': 
-                        intervals = [0, 2, 3, 5, 7, 8, 11, 12]; 
-                        title = "和聲小調音階"; 
-                        fingering = `右手: ${minorFingerings[baseNote]} (注意第7與第8音的增二度)`; 
-                        break;
-                    case 'scale_penta_major': 
-                        intervals = [0, 2, 4, 7, 9, 12]; 
-                        title = "大調五聲音階"; 
-                        fingering = "右手: 1-2-3-1-2-3 (五聲音階避開了半音，可依習慣微調)"; 
-                        break;
+                    case 'scale_major': intervals = [0, 2, 4, 5, 7, 9, 11, 12]; title = "大調音階"; fingering = `右手: ${majorFingerings[baseNote]}`; break;
+                    case 'scale_natural_minor': intervals = [0, 2, 3, 5, 7, 8, 10, 12]; title = "自然小調音階"; fingering = `右手: ${minorFingerings[baseNote]}`; break;
+                    case 'scale_harmonic_minor': intervals = [0, 2, 3, 5, 7, 8, 11, 12]; title = "和聲小調音階"; fingering = `右手: ${minorFingerings[baseNote]} (注意第7與第8音的增二度)`; break;
+                    case 'scale_penta_major': intervals = [0, 2, 4, 7, 9, 12]; title = "大調五聲音階"; fingering = "右手: 1-2-3-1-2-3"; break;
                 }
                 
                 currentTargetNotes = intervals.map(i => rootNote + i);
-                
-                // 呼叫橫向音階繪製函數
                 drawMelodyOnStave('vexflow-canvas', currentTargetNotes, 'treble');
-                
-                document.getElementById('hint-box').innerHTML = `💡 <b>${getNoteName(rootNote)} ${title}</b><br>📝 練習指引：請依序「單音」彈奏畫面上的音符。<br>建議運指：${fingering}`;
+                document.getElementById('hint-box').innerHTML = `💡 <b>${getNoteName(rootNote)} ${title}</b><br>📝 請依序「單音」彈奏畫面上的音符。<br>建議運指：${fingering}`;
                 document.getElementById('hint-box').style.display = 'block';
-                document.getElementById('feedback-msg').textContent = `🎹 等待輸入 (0/${currentTargetNotes.length})...`; 
-                document.getElementById('feedback-msg').className = "msg-waiting";
+                document.getElementById('feedback-msg').textContent = `🎹 等待輸入 (0/${currentTargetNotes.length})...`; document.getElementById('feedback-msg').className = "msg-waiting";
             }
-            // --- 2. 處理級數推算 (Blind Test) ---
             else if (type === 'degree_progression') {
                 let keysPool = [{name: 'C 大調', root: 60}, {name: 'G 大調', root: 67}, {name: 'F 大調', root: 65}];
                 if (incBlack) keysPool = keysPool.concat([{name: 'D 大調', root: 62}, {name: 'Bb 大調', root: 58}, {name: 'A 大調', root: 69}]);
@@ -516,29 +391,23 @@
                 currentTargetNotes = targetDegree.ints.map(int => chordRoot + int);
                 
                 drawEmptyStave('vexflow-canvas', 'treble', 200);
-                document.getElementById('hint-box').innerHTML = `
-                    <div style="font-size: 20px; margin-bottom: 10px;">請推算並彈奏：</div>
-                    <div style="font-size: 28px; color: #e91e63;">${targetKey.name} 的 ${targetDegree.roman} 級和弦</div>
-                    <div style="font-size: 14px; margin-top: 10px; color: #666;">(提示：${targetKey.name} 的 ${targetDegree.roman} 級是 ${getNoteName(chordRoot)}${targetDegree.qual==='Minor'?'m':''})</div>
-                `;
+                document.getElementById('hint-box').innerHTML = `<div style="font-size: 20px; margin-bottom: 10px;">請推算並彈奏：</div><div style="font-size: 28px; color: #e91e63;">${targetKey.name} 的 ${targetDegree.roman} 級和弦</div><div style="font-size: 14px; margin-top: 10px; color: #666;">(提示：${targetKey.name} 的 ${targetDegree.roman} 級是 ${getNoteName(chordRoot)}${targetDegree.qual==='Minor'?'m':''})</div>`;
                 document.getElementById('hint-box').style.display = 'block';
                 document.getElementById('feedback-msg').textContent = "🎹 請在鍵盤上彈出該和弦..."; document.getElementById('feedback-msg').className = "msg-waiting";
             }
-            // --- 3. 處理一般和弦判讀 ---
             else {
                 if (type === 'single') { currentTargetNotes = [pool[Math.floor(Math.random() * pool.length)]]; document.getElementById('hint-box').style.display = 'none'; } 
                 else {
                     const rootNote = pool.filter(n => n <= 67)[Math.floor(Math.random() * pool.filter(n => n <= 67).length)];
-                    let iv = []; let t = "";
                     switch(type) {
-                        case 'chord_major': iv=[0,4,7]; t="大三和弦"; break;
-                        case 'chord_minor': iv=[0,3,7]; t="小三和弦"; break;
-                        case 'chord_maj7': iv=[0,4,7,11]; t="大七和弦"; break;
-                        case 'chord_dom7': iv=[0,4,7,10]; t="屬七和弦"; break;
-                        case 'chord_min7': iv=[0,3,7,10]; t="小七和弦"; break;
+                        case 'chord_major': intervals = [0,4,7]; title = "大三和弦"; break;
+                        case 'chord_minor': intervals = [0,3,7]; title = "小三和弦"; break;
+                        case 'chord_maj7': intervals = [0,4,7,11]; title = "大七和弦"; break;
+                        case 'chord_dom7': intervals = [0,4,7,10]; title = "屬七和弦"; break;
+                        case 'chord_min7': intervals = [0,3,7,10]; title = "小七和弦"; break;
                     }
-                    currentTargetNotes = iv.map(i => rootNote + i);
-                    document.getElementById('hint-box').innerHTML = `💡 <b>${getNoteName(rootNote)} ${t}</b>`;
+                    currentTargetNotes = intervals.map(i => rootNote + i);
+                    document.getElementById('hint-box').innerHTML = `💡 <b>${getNoteName(rootNote)} ${title}</b>`;
                     document.getElementById('hint-box').style.display = 'block';
                 }
                 drawNotesOnStave('vexflow-canvas', currentTargetNotes, 'treble');
@@ -572,41 +441,30 @@
                 if (document.getElementById('tab-practice').classList.contains('active')) {
                     if (!isPracticeMode) {
                         drawNotesOnStave('vexflow-canvas', Array.from(activeKeys), Array.from(activeKeys).reduce((a,b)=>a+b,0)/activeKeys.size < 60 ? 'bass' : 'treble');
-                    } 
-                    else {
-                        // --- 音階模式判定 (Sequential) ---
+                    } else {
                         if (isSequentialMode) {
-                            // 音階練習需要精確的八度音高判定，建立對琴鍵位置的肌肉記憶
                             if (note === currentTargetNotes[sequenceProgress]) {
                                 sequenceProgress++;
                                 document.getElementById('feedback-msg').textContent = `✅ 彈奏正確 (${sequenceProgress}/${currentTargetNotes.length})...`;
                                 document.getElementById('feedback-msg').className = "msg-correct";
-                                
                                 if (sequenceProgress === currentTargetNotes.length) {
                                     streak++; document.getElementById('streak-display').textContent = streak;
                                     document.getElementById('feedback-msg').textContent = "✨ 音階彈奏完美！準備下一題...";
-                                    currentTargetNotes = []; // 鎖定輸入
-                                    setTimeout(generateQuestion, 1500);
+                                    currentTargetNotes = []; setTimeout(generateQuestion, 1500);
                                 }
                             } else {
-                                // 彈錯則中斷連對，並重置進度
                                 sequenceProgress = 0; streak = 0; document.getElementById('streak-display').textContent = streak;
                                 document.getElementById('feedback-msg').textContent = "❌ 彈錯了！請從音階的第一個音重新開始。";
                                 document.getElementById('feedback-msg').className = "msg-error";
                             }
-                        } 
-                        // --- 和弦模式判定 (Simultaneous) ---
-                        else if (currentTargetNotes.length > 0 && activeKeys.size === currentTargetNotes.length) {
+                        } else if (currentTargetNotes.length > 0 && activeKeys.size === currentTargetNotes.length) {
                             const targetNoteNames = currentTargetNotes.map(n => n % 12).sort();
                             const activeNoteNames = Array.from(activeKeys).map(n => n % 12).sort();
                             const isMatch = targetNoteNames.every((val, index) => val === activeNoteNames[index]);
-                            
                             if (isMatch) {
                                 streak++; document.getElementById('streak-display').textContent = streak;
                                 document.getElementById('feedback-msg').textContent = "✨ 判定正確！"; document.getElementById('feedback-msg').className = "msg-correct";
-                                if (document.getElementById('practice-type').value === 'degree_progression') {
-                                    drawNotesOnStave('vexflow-canvas', Array.from(activeKeys), 'treble'); // 畫出獎勵
-                                }
+                                if (document.getElementById('practice-type').value === 'degree_progression') drawNotesOnStave('vexflow-canvas', Array.from(activeKeys), 'treble');
                                 currentTargetNotes = []; setTimeout(generateQuestion, 1500);
                             }
                         }
@@ -615,7 +473,6 @@
             } else if (type === 128 || (type === 144 && velocity === 0)) {
                 activeKeys.delete(note); synth.triggerRelease(noteName, Tone.now());
                 document.getElementById('active-keys-display').textContent = activeKeys.size===0 ? "目前按住: 無" : `目前按住: [ ${Array.from(activeKeys).sort((a,b)=>a-b).map(n=>getNoteName(n)).join(', ')} ]`;
-                
                 if (document.getElementById('tab-practice').classList.contains('active') && !isPracticeMode) {
                     if (activeKeys.size > 0) drawNotesOnStave('vexflow-canvas', Array.from(activeKeys), Array.from(activeKeys).reduce((a,b)=>a+b,0)/activeKeys.size < 60 ? 'bass' : 'treble');
                     else drawEmptyStave('vexflow-canvas', 'treble', 200);
@@ -623,12 +480,10 @@
             }
         }
 
-// --- 強化版 Web MIDI 處理與除錯邏輯 ---
+        // --- 強化除錯版 Web MIDI 連線 ---
         if (navigator.requestMIDIAccess) {
-            // 明確宣告不需要 sysex (系統排除訊息)，這能減少權限阻擋的機率
             navigator.requestMIDIAccess({ sysex: false }).then((midiAccess) => {
                 const inputs = midiAccess.inputs;
-                
                 if (inputs.size === 0) {
                     document.getElementById('status').textContent = "⚠️ 找不到 MIDI 裝置，請檢查線材或是否被其他軟體佔用。";
                     document.getElementById('status').className = "error";
@@ -636,12 +491,7 @@
                     document.getElementById('status').textContent = "✅ MIDI 已連接。";
                     document.getElementById('status').className = "connected";
                 }
-
-                for (let input of inputs.values()) {
-                    input.onmidimessage = onMIDIMessage;
-                }
-
-                // 監聽鍵盤拔插事件
+                for (let input of inputs.values()) { input.onmidimessage = onMIDIMessage; }
                 midiAccess.onstatechange = (e) => { 
                     if (e.port.type === 'input') {
                         if (e.port.state === 'connected') {
@@ -655,13 +505,14 @@
                     }
                 };
             }).catch((err) => { 
-                // 如果被阻擋，這裡會印出詳細原因
                 document.getElementById('status').textContent = "❌ MIDI 存取失敗：" + err.message; 
                 document.getElementById('status').className = "error";
                 console.error("MIDI 錯誤詳細資訊:", err);
             });
         } else {
-            // Safari 會走到這一步
-            document.getElementById('status').textContent = "❌ 您的瀏覽器 (如 Safari) 原生不支援 Web MIDI API。請改用 Chrome 或 Edge。";
+            document.getElementById('status').textContent = "❌ 您的瀏覽器原生不支援 Web MIDI API。請改用 Chrome 或 Edge。";
             document.getElementById('status').className = "error";
         }
+    </script>
+</body>
+</html>
