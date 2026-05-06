@@ -378,15 +378,65 @@
                 const rootNote = pool.filter(n => n >= 60 && n <= 65)[Math.floor(Math.random() * pool.filter(n => n >= 60 && n <= 65).length)];
                 
                 let intervals = []; let title = ""; let fingering = "";
+// --- 指法字典建置 ---
+                // 大調右手單八度指法 (MIDI 60=C 到 71=B)
+                const majorFingerings = {
+                    60: "1-2-3-1-2-3-4-5", // C 大調
+                    61: "2-3-1-2-3-4-1-2", // Db (黑鍵起手)
+                    62: "1-2-3-1-2-3-4-5", // D 大調
+                    63: "3-1-2-3-4-1-2-3", // Eb (黑鍵起手)
+                    64: "1-2-3-1-2-3-4-5", // E 大調
+                    65: "1-2-3-4-1-2-3-4", // F 大調 (特例：第四音為黑鍵 Bb，拇指不彈黑鍵)
+                    66: "2-3-4-1-2-3-1-2", // Gb (黑鍵起手)
+                    67: "1-2-3-1-2-3-4-5", // G 大調
+                    68: "3-4-1-2-3-1-2-3", // Ab (黑鍵起手)
+                    69: "1-2-3-1-2-3-4-5", // A 大調
+                    70: "4-1-2-3-1-2-3-4", // Bb (黑鍵起手)
+                    71: "1-2-3-1-2-3-4-5"  // B 大調
+                };
+
+                // 小調右手單八度指法 (適用於自然小調與和聲小調)
+                const minorFingerings = {
+                    60: "1-2-3-1-2-3-4-5", // Cm
+                    61: "3-4-1-2-3-1-2-3", // C#m
+                    62: "1-2-3-1-2-3-4-5", // Dm
+                    63: "3-1-2-3-4-1-2-3", // Ebm
+                    64: "1-2-3-1-2-3-4-5", // Em
+                    65: "1-2-3-4-1-2-3-4", // Fm
+                    66: "3-4-1-2-3-1-2-3", // F#m
+                    67: "1-2-3-1-2-3-4-5", // Gm
+                    68: "3-4-1-2-3-1-2-3", // G#m
+                    69: "1-2-3-1-2-3-4-5", // Am
+                    70: "2-1-2-3-1-2-3-4", // Bbm
+                    71: "1-2-3-1-2-3-4-5"  // Bm
+                };
+
+                // 將隨機抽到的根音轉換成 60~71 的基準區間，以對應字典
+                const baseNote = (rootNote % 12) + 60;
+
+                let intervals = []; let title = ""; let fingering = "";
+                
                 switch(type) {
                     case 'scale_major': 
-                        intervals = [0, 2, 4, 5, 7, 9, 11, 12]; title = "大調音階"; fingering = "右手: 1-2-3-1-2-3-4-5"; break;
+                        intervals = [0, 2, 4, 5, 7, 9, 11, 12]; 
+                        title = "大調音階"; 
+                        fingering = `右手: ${majorFingerings[baseNote]}`; 
+                        break;
                     case 'scale_natural_minor': 
-                        intervals = [0, 2, 3, 5, 7, 8, 10, 12]; title = "自然小調音階"; fingering = "視調性變化，通常指法需轉指"; break;
+                        intervals = [0, 2, 3, 5, 7, 8, 10, 12]; 
+                        title = "自然小調音階"; 
+                        fingering = `右手: ${minorFingerings[baseNote]}`; 
+                        break;
                     case 'scale_harmonic_minor': 
-                        intervals = [0, 2, 3, 5, 7, 8, 11, 12]; title = "和聲小調音階"; fingering = "注意 7 與 8 音的增二度距離"; break;
+                        intervals = [0, 2, 3, 5, 7, 8, 11, 12]; 
+                        title = "和聲小調音階"; 
+                        fingering = `右手: ${minorFingerings[baseNote]} (注意第7與第8音的增二度)`; 
+                        break;
                     case 'scale_penta_major': 
-                        intervals = [0, 2, 4, 7, 9, 12]; title = "大調五聲音階"; fingering = "流行吉他與鍵盤即興最常用"; break;
+                        intervals = [0, 2, 4, 7, 9, 12]; 
+                        title = "大調五聲音階"; 
+                        fingering = "右手: 1-2-3-1-2-3 (五聲音階避開了半音，可依習慣微調)"; 
+                        break;
                 }
                 
                 currentTargetNotes = intervals.map(i => rootNote + i);
