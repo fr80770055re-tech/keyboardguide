@@ -1,0 +1,16 @@
+{
+  "name": "音樂學習整合平台",
+  "short_name": "樂理練習",
+  "description": "包含節拍器、和弦推算與音階練習的 MIDI 鍵盤學習工具",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f7f9fc",
+  "theme_color": "#007bff",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/860/860162.png", 
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
