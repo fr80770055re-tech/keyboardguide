@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
+    <link rel="manifest" href="manifest.json">
     <meta charset="UTF-8">
     <title>音樂學習整合平台 - 完整無錯最終版</title>
     <!-- 解決找不到 favicon.ico 產生的 404 報錯 -->
@@ -512,6 +513,14 @@
         } else {
             document.getElementById('status').textContent = "❌ 您的瀏覽器原生不支援 Web MIDI API。請改用 Chrome 或 Edge。";
             document.getElementById('status').className = "error";
+        }
+        // 註冊 Service Worker (PWA 離線支援)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(registration => console.log('ServiceWorker 註冊成功:', registration.scope))
+                    .catch(err => console.log('ServiceWorker 註冊失敗:', err));
+            });
         }
     </script>
 </body>
