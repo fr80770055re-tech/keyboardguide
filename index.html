@@ -1,10 +1,8 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <link rel="manifest" href="manifest.json">
     <meta charset="UTF-8">
-    <title>音樂學習整合平台 - 完整無錯最終版</title>
-    <!-- 解決找不到 favicon.ico 產生的 404 報錯 -->
+    <title>音樂學習整合平台 - 雙譜號大師版</title>
     <link rel="icon" href="data:,">
     <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.2/build/cjs/vexflow.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
@@ -38,8 +36,15 @@
         .settings-group { display: flex; gap: 15px; align-items: center; font-weight: bold; color: #0d47a1; }
         select { padding: 5px 10px; font-size: 16px; border-radius: 4px; }
         
+        #preview-btn { background-color: #17a2b8; color: white; }
+        #preview-btn:hover { background-color: #138496; }
+        #preview-btn.active { background-color: #117a8b; border: 2px solid #0c5460; box-shadow: inset 0 3px 5px rgba(0,0,0,0.2); }
+        #preview-btn:disabled { background-color: #a1d6e2; cursor: not-allowed; border: none; box-shadow: none;}
+        
         #practice-btn { background-color: #ff9800; color: white; }
         #practice-btn.active { background-color: #f44336; }
+        #practice-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        
         .score-board { font-size: 18px; font-weight: bold; color: #1565c0; }
         
         .canvas-container { display: flex; justify-content: center; align-items: center; min-height: 220px; background: #fffdf5; border: 1px solid #ddd; border-radius: 5px; flex-direction: column; padding: 20px;}
@@ -69,6 +74,7 @@
         .msg-error { color: #dc3545; }
         .msg-correct { color: #28a745; }
         .msg-waiting { color: #555; }
+        .msg-preview { color: #17a2b8; }
 
         #log { height: 100px; overflow-y: auto; background: #282c34; color: #98c379; padding: 10px; font-family: monospace; border-radius: 5px; font-size: 14px; }
     </style>
@@ -103,7 +109,10 @@
                 <div class="settings-group">
                     <label>練習項目:</label>
                     <select id="practice-type">
-                        <option value="single">單音判讀</option>
+                        <option disabled>── 單音判讀 (五線譜位置) ──</option>
+                        <option value="single_treble" selected>單音判讀 (高音譜號 / 右手)</option>
+                        <option value="single_bass">單音判讀 (低音譜號 / 左手)</option>
+                        <option value="single_mixed">單音判讀 (高低音綜合訓練)</option>
                         <option disabled>── 和弦練習 ──</option>
                         <option value="chord_major">大三和弦 (Major)</option>
                         <option value="chord_minor">小三和弦 (Minor)</option>
@@ -118,9 +127,14 @@
                         <option value="scale_harmonic_minor">和聲小調音階 (Harmonic Minor)</option>
                         <option value="scale_penta_major">大調五聲音階 (Major Pentatonic)</option>
                     </select>
-                    <label><input type="checkbox" id="include-black-keys"> 包含黑鍵/複雜調號</label>
+                    <label><input type="checkbox" id="include-black-keys" checked> 包含黑鍵</label>
                 </div>
-                <button id="practice-btn" disabled>🎯 2. 開始練習</button>
+                
+                <div style="display: flex; gap: 10px;">
+                    <button id="preview-btn" disabled>👀 預覽 (自由練)</button>
+                    <button id="practice-btn" disabled>🎯 開始練習</button>
+                </div>
+                
                 <div class="score-board">連對: <span id="streak-display">0</span></div>
             </div>
             
@@ -188,7 +202,6 @@
                 <div id="dict-chord-hint" class="hint-box" style="display: block;">請在上方選擇一個和弦級數</div>
             </div>
         </div>
-
     </div>
 
     <div class="card">
@@ -197,7 +210,7 @@
     </div>
 
     <script>
-        // --- SPA 頁籤 ---
+        // --- SPA 頁籤切換 ---
         const tabBtns = document.querySelectorAll('.tab-btn');
         const tabContents = document.querySelectorAll('.tab-content');
         tabBtns.forEach(btn => {
@@ -209,7 +222,7 @@
             });
         });
 
-        // --- Tone.js 音源 ---
+        // --- Tone.js 音源與連線 ---
         const VF = Vex.Flow;
         const synth = new Tone.PolySynth(Tone.Synth, { oscillator: { type: "triangle" }, envelope: { attack: 0.02, decay: 0.1, sustain: 0.4, release: 1.5 } }).toDestination();
         const clickHigh = new Tone.MembraneSynth({ pitchDecay: 0.008, octaves: 2, volume: -10 }).toDestination();
@@ -219,7 +232,9 @@
         document.getElementById('audio-btn').addEventListener('click', async () => {
             await Tone.start(); isAudioUnlocked = true;
             document.getElementById('audio-btn').textContent = "✅ 音源已啟用"; document.getElementById('audio-btn').disabled = true; 
-            document.getElementById('metro-play-btn').disabled = false; document.getElementById('practice-btn').disabled = false;
+            document.getElementById('metro-play-btn').disabled = false; 
+            document.getElementById('preview-btn').disabled = false;
+            document.getElementById('practice-btn').disabled = false;
             document.querySelectorAll('.prog-btn').forEach(b => b.disabled = false);
             updateDictionary();
         });
@@ -347,23 +362,57 @@
         document.getElementById('time-sig-select').onchange = (e) => { timeSignature = parseInt(e.target.value); currentBeat = 0; };
 
         // --- 測驗系統核心邏輯 ---
-        let isPracticeMode = false; let isSequentialMode = false; let currentTargetNotes = []; let sequenceProgress = 0; let score = 0; let streak = 0;
+        let isPracticeMode = false; 
+        let isPreviewMode = false;
+        let isSequentialMode = false; 
+        let currentTargetNotes = []; 
+        let currentClef = 'treble'; // 追蹤目前的譜號狀態
+        let sequenceProgress = 0; 
+        let streak = 0;
         
-        function generateQuestion() {
+        const handleSettingChange = () => { if (isPreviewMode) generateQuestion(true); };
+        document.getElementById('practice-type').addEventListener('change', handleSettingChange);
+        document.getElementById('include-black-keys').addEventListener('change', handleSettingChange);
+
+        function generateQuestion(isPreview = false) {
             const type = document.getElementById('practice-type').value;
             const incBlack = document.getElementById('include-black-keys').checked;
             
-            isSequentialMode = false; sequenceProgress = 0;
+            isSequentialMode = false; sequenceProgress = 0; currentClef = 'treble';
             
-            let pool = [60, 62, 64, 65, 67, 69, 71, 72, 74, 76, 77, 79];
-            if (incBlack) pool = pool.concat([61, 63, 66, 68, 70, 73, 75, 78]);
+            // 定義高低音題庫 (C4 設為分界點)
+            const trebleWhite = [60, 62, 64, 65, 67, 69, 71, 72, 74, 76, 77, 79];
+            const trebleBlack = [61, 63, 66, 68, 70, 73, 75, 78];
+            const bassWhite = [41, 43, 45, 47, 48, 50, 52, 53, 55, 57, 59, 60];
+            const bassBlack = [42, 44, 46, 49, 51, 54, 56, 58];
 
-            // 在最外層宣告，修復 SyntaxError 致命錯誤
+            let treblePool = [...trebleWhite]; if (incBlack) treblePool = treblePool.concat(trebleBlack);
+            let bassPool = [...bassWhite]; if (incBlack) bassPool = bassPool.concat(bassBlack);
+
             let intervals = []; let title = ""; let fingering = "";
 
-            if (type.startsWith('scale_')) {
+            // --- 1. 處理單音模式 (高音/低音/綜合) ---
+            if (type.startsWith('single_')) {
+                let pool = treblePool;
+                currentClef = 'treble';
+                
+                if (type === 'single_bass') { 
+                    pool = bassPool; 
+                    currentClef = 'bass'; 
+                } else if (type === 'single_mixed') {
+                    if (Math.random() > 0.5) { pool = bassPool; currentClef = 'bass'; }
+                }
+                
+                currentTargetNotes = [pool[Math.floor(Math.random() * pool.length)]];
+                document.getElementById('hint-box').style.display = 'none';
+                
+                // 單音練習：不論預覽還是測驗，都必須畫出音符！
+                drawNotesOnStave('vexflow-canvas', currentTargetNotes, currentClef);
+            }
+            // --- 2. 處理音階模式 ---
+            else if (type.startsWith('scale_')) {
                 isSequentialMode = true;
-                const rootNote = pool.filter(n => n >= 60 && n <= 65)[Math.floor(Math.random() * pool.filter(n => n >= 60 && n <= 65).length)];
+                const rootNote = treblePool.filter(n => n >= 60 && n <= 65)[Math.floor(Math.random() * treblePool.filter(n => n >= 60 && n <= 65).length)];
                 const baseNote = (rootNote % 12) + 60;
                 
                 const majorFingerings = { 60: "1-2-3-1-2-3-4-5", 61: "2-3-1-2-3-4-1-2", 62: "1-2-3-1-2-3-4-5", 63: "3-1-2-3-4-1-2-3", 64: "1-2-3-1-2-3-4-5", 65: "1-2-3-4-1-2-3-4", 66: "2-3-4-1-2-3-1-2", 67: "1-2-3-1-2-3-4-5", 68: "3-4-1-2-3-1-2-3", 69: "1-2-3-1-2-3-4-5", 70: "4-1-2-3-1-2-3-4", 71: "1-2-3-1-2-3-4-5" };
@@ -377,11 +426,11 @@
                 }
                 
                 currentTargetNotes = intervals.map(i => rootNote + i);
-                drawMelodyOnStave('vexflow-canvas', currentTargetNotes, 'treble');
+                drawMelodyOnStave('vexflow-canvas', currentTargetNotes, currentClef);
                 document.getElementById('hint-box').innerHTML = `💡 <b>${getNoteName(rootNote)} ${title}</b><br>📝 請依序「單音」彈奏畫面上的音符。<br>建議運指：${fingering}`;
                 document.getElementById('hint-box').style.display = 'block';
-                document.getElementById('feedback-msg').textContent = `🎹 等待輸入 (0/${currentTargetNotes.length})...`; document.getElementById('feedback-msg').className = "msg-waiting";
             }
+            // --- 3. 處理級數推算 ---
             else if (type === 'degree_progression') {
                 let keysPool = [{name: 'C 大調', root: 60}, {name: 'G 大調', root: 67}, {name: 'F 大調', root: 65}];
                 if (incBlack) keysPool = keysPool.concat([{name: 'D 大調', root: 62}, {name: 'Bb 大調', root: 58}, {name: 'A 大調', root: 69}]);
@@ -391,44 +440,99 @@
                 let chordRoot = targetKey.root + targetDegree.int; if (chordRoot > 72) chordRoot -= 12;
                 currentTargetNotes = targetDegree.ints.map(int => chordRoot + int);
                 
-                drawEmptyStave('vexflow-canvas', 'treble', 200);
+                if (isPreview) {
+                    drawNotesOnStave('vexflow-canvas', currentTargetNotes, currentClef);
+                } else {
+                    drawEmptyStave('vexflow-canvas', currentClef, 200); // 盲測
+                }
+                
                 document.getElementById('hint-box').innerHTML = `<div style="font-size: 20px; margin-bottom: 10px;">請推算並彈奏：</div><div style="font-size: 28px; color: #e91e63;">${targetKey.name} 的 ${targetDegree.roman} 級和弦</div><div style="font-size: 14px; margin-top: 10px; color: #666;">(提示：${targetKey.name} 的 ${targetDegree.roman} 級是 ${getNoteName(chordRoot)}${targetDegree.qual==='Minor'?'m':''})</div>`;
                 document.getElementById('hint-box').style.display = 'block';
-                document.getElementById('feedback-msg').textContent = "🎹 請在鍵盤上彈出該和弦..."; document.getElementById('feedback-msg').className = "msg-waiting";
             }
+            // --- 4. 一般和弦判讀 ---
             else {
-                if (type === 'single') { currentTargetNotes = [pool[Math.floor(Math.random() * pool.length)]]; document.getElementById('hint-box').style.display = 'none'; } 
-                else {
-                    const rootNote = pool.filter(n => n <= 67)[Math.floor(Math.random() * pool.filter(n => n <= 67).length)];
-                    switch(type) {
-                        case 'chord_major': intervals = [0,4,7]; title = "大三和弦"; break;
-                        case 'chord_minor': intervals = [0,3,7]; title = "小三和弦"; break;
-                        case 'chord_maj7': intervals = [0,4,7,11]; title = "大七和弦"; break;
-                        case 'chord_dom7': intervals = [0,4,7,10]; title = "屬七和弦"; break;
-                        case 'chord_min7': intervals = [0,3,7,10]; title = "小七和弦"; break;
-                    }
-                    currentTargetNotes = intervals.map(i => rootNote + i);
-                    document.getElementById('hint-box').innerHTML = `💡 <b>${getNoteName(rootNote)} ${title}</b>`;
-                    document.getElementById('hint-box').style.display = 'block';
+                const rootNote = treblePool.filter(n => n <= 67)[Math.floor(Math.random() * treblePool.filter(n => n <= 67).length)];
+                switch(type) {
+                    case 'chord_major': intervals = [0,4,7]; title = "大三和弦"; break;
+                    case 'chord_minor': intervals = [0,3,7]; title = "小三和弦"; break;
+                    case 'chord_maj7': intervals = [0,4,7,11]; title = "大七和弦"; break;
+                    case 'chord_dom7': intervals = [0,4,7,10]; title = "屬七和弦"; break;
+                    case 'chord_min7': intervals = [0,3,7,10]; title = "小七和弦"; break;
                 }
-                drawNotesOnStave('vexflow-canvas', currentTargetNotes, 'treble');
-                document.getElementById('feedback-msg').textContent = "🎹 請彈奏畫面上的音符..."; document.getElementById('feedback-msg').className = "msg-waiting";
+                currentTargetNotes = intervals.map(i => rootNote + i);
+                document.getElementById('hint-box').innerHTML = `💡 <b>${getNoteName(rootNote)} ${title}</b>`;
+                document.getElementById('hint-box').style.display = 'block';
+                drawNotesOnStave('vexflow-canvas', currentTargetNotes, currentClef);
+            }
+
+            // 更新反饋狀態
+            const fb = document.getElementById('feedback-msg');
+            if (isPreview) {
+                fb.innerHTML = "👀 <b>預覽模式：畫布已鎖定，請看譜自由練習 (不計分)</b>"; fb.className = "msg-preview";
+            } else {
+                if (isSequentialMode) {
+                    fb.textContent = `🎹 等待輸入 (0/${currentTargetNotes.length})...`; fb.className = "msg-waiting";
+                } else if (type === 'degree_progression') {
+                    fb.textContent = "🎹 請在鍵盤上彈出該和弦..."; fb.className = "msg-waiting";
+                } else {
+                    fb.textContent = "🎹 請彈奏畫面上的音符..."; fb.className = "msg-waiting";
+                }
             }
         }
+
+        document.getElementById('preview-btn').onclick = (e) => {
+            if (isPracticeMode) return;
+            isPreviewMode = !isPreviewMode;
+            if (isPreviewMode) {
+                e.target.textContent = "🚫 取消預覽"; e.target.classList.add('active');
+                generateQuestion(true); 
+            } else {
+                e.target.textContent = "👀 預覽 (自由練)"; e.target.classList.remove('active');
+                currentTargetNotes = []; isSequentialMode = false; currentClef = 'treble';
+                document.getElementById('hint-box').style.display = 'none';
+                document.getElementById('feedback-msg').textContent = "自由彈奏模式"; document.getElementById('feedback-msg').className = "msg-waiting";
+                drawEmptyStave('vexflow-canvas', currentClef, 200);
+            }
+        };
 
         document.getElementById('practice-btn').onclick = (e) => {
             isPracticeMode = !isPracticeMode;
             if (isPracticeMode) {
                 e.target.textContent = "⏹️ 結束練習"; e.target.classList.add('active');
                 document.getElementById('practice-type').disabled = true; document.getElementById('include-black-keys').disabled = true;
-                score = 0; streak = 0; document.getElementById('streak-display').textContent = streak;
-                activeKeys.clear(); document.getElementById('active-keys-display').textContent = "目前按住: 無"; generateQuestion();
+                document.getElementById('preview-btn').disabled = true;
+                
+                streak = 0; document.getElementById('streak-display').textContent = streak;
+                activeKeys.clear(); document.getElementById('active-keys-display').textContent = "目前按住: 無"; 
+                
+                if (isPreviewMode) {
+                    isPreviewMode = false;
+                    document.getElementById('preview-btn').textContent = "👀 預覽 (自由練)"; document.getElementById('preview-btn').classList.remove('active');
+                    
+                    sequenceProgress = 0;
+                    const type = document.getElementById('practice-type').value;
+                    const fb = document.getElementById('feedback-msg');
+                    
+                    if (isSequentialMode) {
+                        fb.textContent = `🎹 等待輸入 (0/${currentTargetNotes.length})...`; fb.className = "msg-waiting";
+                    } else if (type === 'degree_progression') {
+                        drawEmptyStave('vexflow-canvas', currentClef, 200); 
+                        fb.textContent = "🎹 請在鍵盤上彈出該和弦..."; fb.className = "msg-waiting";
+                    } else {
+                        fb.textContent = "🎹 請彈奏畫面上的音符..."; fb.className = "msg-waiting";
+                    }
+                } else {
+                    generateQuestion(false);
+                }
             } else {
-                e.target.textContent = "🎯 2. 開始練習"; e.target.classList.remove('active');
+                e.target.textContent = "🎯 開始練習"; e.target.classList.remove('active');
                 document.getElementById('practice-type').disabled = false; document.getElementById('include-black-keys').disabled = false;
-                currentTargetNotes = []; isSequentialMode = false; document.getElementById('hint-box').style.display = 'none';
+                document.getElementById('preview-btn').disabled = false;
+                
+                currentTargetNotes = []; isSequentialMode = false; currentClef = 'treble';
+                document.getElementById('hint-box').style.display = 'none';
                 document.getElementById('feedback-msg').textContent = "自由彈奏模式"; document.getElementById('feedback-msg').className = "msg-waiting";
-                drawEmptyStave('vexflow-canvas', 'treble', 200);
+                drawEmptyStave('vexflow-canvas', currentClef, 200);
             }
         };
 
@@ -441,7 +545,11 @@
                 
                 if (document.getElementById('tab-practice').classList.contains('active')) {
                     if (!isPracticeMode) {
-                        drawNotesOnStave('vexflow-canvas', Array.from(activeKeys), Array.from(activeKeys).reduce((a,b)=>a+b,0)/activeKeys.size < 60 ? 'bass' : 'treble');
+                        if (!isPreviewMode) {
+                            // 動態切換譜號：如果平均音高低於 60，就用低音譜號畫
+                            const avgPitch = Array.from(activeKeys).reduce((a,b)=>a+b,0)/activeKeys.size;
+                            drawNotesOnStave('vexflow-canvas', Array.from(activeKeys), avgPitch < 60 ? 'bass' : 'treble');
+                        }
                     } else {
                         if (isSequentialMode) {
                             if (note === currentTargetNotes[sequenceProgress]) {
@@ -451,7 +559,7 @@
                                 if (sequenceProgress === currentTargetNotes.length) {
                                     streak++; document.getElementById('streak-display').textContent = streak;
                                     document.getElementById('feedback-msg').textContent = "✨ 音階彈奏完美！準備下一題...";
-                                    currentTargetNotes = []; setTimeout(generateQuestion, 1500);
+                                    currentTargetNotes = []; setTimeout(() => generateQuestion(false), 1500);
                                 }
                             } else {
                                 sequenceProgress = 0; streak = 0; document.getElementById('streak-display').textContent = streak;
@@ -465,8 +573,10 @@
                             if (isMatch) {
                                 streak++; document.getElementById('streak-display').textContent = streak;
                                 document.getElementById('feedback-msg').textContent = "✨ 判定正確！"; document.getElementById('feedback-msg').className = "msg-correct";
-                                if (document.getElementById('practice-type').value === 'degree_progression') drawNotesOnStave('vexflow-canvas', Array.from(activeKeys), 'treble');
-                                currentTargetNotes = []; setTimeout(generateQuestion, 1500);
+                                if (document.getElementById('practice-type').value === 'degree_progression') {
+                                    drawNotesOnStave('vexflow-canvas', Array.from(activeKeys), currentClef);
+                                }
+                                currentTargetNotes = []; setTimeout(() => generateQuestion(false), 1500);
                             }
                         }
                     }
@@ -474,9 +584,16 @@
             } else if (type === 128 || (type === 144 && velocity === 0)) {
                 activeKeys.delete(note); synth.triggerRelease(noteName, Tone.now());
                 document.getElementById('active-keys-display').textContent = activeKeys.size===0 ? "目前按住: 無" : `目前按住: [ ${Array.from(activeKeys).sort((a,b)=>a-b).map(n=>getNoteName(n)).join(', ')} ]`;
+                
                 if (document.getElementById('tab-practice').classList.contains('active') && !isPracticeMode) {
-                    if (activeKeys.size > 0) drawNotesOnStave('vexflow-canvas', Array.from(activeKeys), Array.from(activeKeys).reduce((a,b)=>a+b,0)/activeKeys.size < 60 ? 'bass' : 'treble');
-                    else drawEmptyStave('vexflow-canvas', 'treble', 200);
+                    if (!isPreviewMode) {
+                        if (activeKeys.size > 0) {
+                            const avgPitch = Array.from(activeKeys).reduce((a,b)=>a+b,0)/activeKeys.size;
+                            drawNotesOnStave('vexflow-canvas', Array.from(activeKeys), avgPitch < 60 ? 'bass' : 'treble');
+                        } else {
+                            drawEmptyStave('vexflow-canvas', 'treble', 200);
+                        }
+                    }
                 }
             }
         }
@@ -513,14 +630,6 @@
         } else {
             document.getElementById('status').textContent = "❌ 您的瀏覽器原生不支援 Web MIDI API。請改用 Chrome 或 Edge。";
             document.getElementById('status').className = "error";
-        }
-        // 註冊 Service Worker (PWA 離線支援)
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
-                    .then(registration => console.log('ServiceWorker 註冊成功:', registration.scope))
-                    .catch(err => console.log('ServiceWorker 註冊失敗:', err));
-            });
         }
     </script>
 </body>
