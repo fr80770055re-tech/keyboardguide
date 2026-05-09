@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>音樂學習整合平台 - 聽音特訓與數據版</title>
+    <title>音樂學習整合平台 - 終極樂理與聽音版</title>
     <link rel="icon" href="data:,">
     <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.2/build/cjs/vexflow.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
@@ -141,9 +141,9 @@
                     <label>指定根音:</label>
                     <select id="target-root-selector" style="background-color: #fff3cd; font-weight: bold;">
                         <option value="random">🎲 隨機出題</option>
-                        <option value="60">C</option><option value="61">C# / Db</option><option value="62">D</option><option value="63">D# / Eb</option>
-                        <option value="64">E</option><option value="65">F</option><option value="66">F# / Gb</option><option value="67">G</option>
-                        <option value="68">G# / Ab</option><option value="69">A</option><option value="70">A# / Bb</option><option value="71">B</option>
+                        <option value="60">C</option><option value="61">Db / C#</option><option value="62">D</option><option value="63">Eb / D#</option>
+                        <option value="64">E</option><option value="65">F</option><option value="66">Gb / F#</option><option value="67">G</option>
+                        <option value="68">Ab / G#</option><option value="69">A</option><option value="70">Bb / A#</option><option value="71">B</option>
                     </select>
 
                     <label>練習項目:</label>
@@ -170,7 +170,7 @@
                         <option value="scale_harmonic_minor">和聲小調音階 (Harmonic Minor)</option>
                         <option value="scale_penta_major">大調五聲音階 (Major Pentatonic)</option>
                     </select>
-                    <label><input type="checkbox" id="include-black-keys" checked> 包含黑鍵</label>
+                    <label><input type="checkbox" id="include-black-keys" checked> 包含黑鍵(隨機模式)</label>
                 </div>
                 
                 <div style="display: flex; gap: 10px; margin-top: 10px; width: 100%; justify-content: flex-end; align-items: center;">
@@ -283,7 +283,7 @@
                 updateStatsUI();
             }
         });
-        updateStatsUI(); // 初始化畫面
+        updateStatsUI();
 
         // --- 2. SPA 頁籤切換 ---
         const tabBtns = document.querySelectorAll('.tab-btn');
@@ -317,7 +317,7 @@
         function logMessage(msg) { document.getElementById('log').innerHTML = msg + "<br>" + document.getElementById('log').innerHTML; }
         function playDictSound(duration) { if (isAudioUnlocked) synth.triggerAttackRelease("C4", duration, Tone.now()); }
 
-        // --- 4. VexFlow 繪圖引擎 (加入降記號支援) ---
+        // --- 4. VexFlow 繪圖引擎 (完全支援升降記號) ---
         function drawEmptyStave(divId, clef, customWidth = 200) {
             const div = document.getElementById(divId); div.innerHTML = "";
             const renderer = new VF.Renderer(div, VF.Renderer.Backends.SVG); 
@@ -380,12 +380,14 @@
             } catch (e) { console.log(e); }
         }
 
-        // 文字轉換支援降記號
         function getNoteName(midi, useFlats = false) {
             const sharpNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
             const flatNames = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
             return useFlats ? flatNames[midi % 12] : sharpNames[midi % 12];
         }
+
+        // 定義哪些根音 (MIDI % 12) 習慣使用降記號: F, Bb, Eb, Ab, Db, Gb
+        const flatRoots = [5, 10, 3, 8, 1, 6]; 
 
         // --- 5. 級數推算與羅馬字典 ---
         const scalesFormula = {
@@ -393,15 +395,12 @@
             'minor': [{ roman: 'i', int: 0, qual: 'Minor', ints: [0, 3, 7] }, { roman: 'ii°', int: 2, qual: 'Dim', ints: [0, 3, 6] }, { roman: 'III', int: 3, qual: 'Major', ints: [0, 4, 7] }, { roman: 'iv', int: 5, qual: 'Minor', ints: [0, 3, 7] }, { roman: 'v', int: 7, qual: 'Minor', ints: [0, 3, 7] }, { roman: 'VI', int: 8, qual: 'Major', ints: [0, 4, 7] }, { roman: 'VII', int: 10, qual: 'Major', ints: [0, 4, 7] }]
         };
         
-        // 判斷該根音是否習慣使用降記號 (F, Bb, Eb, Ab, Db, Gb)
-        const flatRoots = [65, 70, 63, 68, 61, 66]; 
-        
         let currentDiatonicChords = [];
         
         function updateDictionary() {
             const rootMidi = parseInt(document.getElementById('key-root-selector').value); 
             const mode = document.getElementById('key-mode-selector').value;
-            const useFlats = flatRoots.includes(rootMidi % 12); // 字典區自動判斷降記號
+            const useFlats = flatRoots.includes(rootMidi % 12); 
             const relativeDisplay = document.getElementById('relative-key-display');
             
             if (mode === 'major') {
@@ -464,10 +463,10 @@
         let isPracticeMode = false; 
         let isPreviewMode = false;
         let isSequentialMode = false; 
-        let isEarTrainingMode = false; // 追蹤是否為聽音測驗
+        let isEarTrainingMode = false; 
         let currentTargetNotes = []; 
         let currentClef = 'treble';
-        let currentUseFlats = false; // 當前題目是否使用降記號
+        let currentUseFlats = false; 
         let sequenceProgress = 0; 
         let streak = 0;
         
@@ -476,7 +475,6 @@
         document.getElementById('include-black-keys').addEventListener('change', handleSettingChange);
         document.getElementById('target-root-selector').addEventListener('change', handleSettingChange); 
 
-        // 聽音測驗專用重播按鈕
         document.getElementById('replay-btn').onclick = () => {
             if (currentTargetNotes.length > 0 && isAudioUnlocked) {
                 synth.triggerAttackRelease(currentTargetNotes.map(n => Tone.Midi(n).toNote()), "2n", Tone.now());
@@ -491,7 +489,6 @@
             isSequentialMode = false; sequenceProgress = 0; currentClef = 'treble'; currentUseFlats = false;
             isEarTrainingMode = type.startsWith('ear_');
             
-            // 聽音測驗按鈕顯示控制
             document.getElementById('replay-btn').style.display = isEarTrainingMode && !isPreview ? 'block' : 'none';
 
             const trebleWhite = [60, 62, 64, 65, 67, 69, 71, 72, 74, 76, 77, 79];
@@ -504,11 +501,10 @@
 
             let intervals = []; let title = ""; let fingering = "";
 
-            // 判斷是否需要強制使用降記號 (依據使用者指定的根音)
             if (targetRootVal !== 'random') {
                 currentUseFlats = flatRoots.includes(parseInt(targetRootVal) % 12);
             } else {
-                currentUseFlats = Math.random() > 0.5; // 隨機出題時，一半機率用降記號顯示
+                currentUseFlats = Math.random() > 0.5; 
             }
 
             // --- 0. 處理聽音特訓模式 ---
@@ -529,10 +525,9 @@
                 document.getElementById('hint-box').style.display = 'block';
 
                 if (isPreview) {
-                    drawNotesOnStave('vexflow-canvas', currentTargetNotes, currentClef, currentUseFlats); // 預覽看解答
+                    drawNotesOnStave('vexflow-canvas', currentTargetNotes, currentClef, currentUseFlats); 
                 } else {
-                    drawEmptyStave('vexflow-canvas', currentClef, 200); // 盲聽
-                    // 播放題目聲音
+                    drawEmptyStave('vexflow-canvas', currentClef, 200); 
                     setTimeout(() => {
                         synth.triggerAttackRelease(currentTargetNotes.map(n => Tone.Midi(n).toNote()), "2n", Tone.now());
                     }, 300);
@@ -561,7 +556,7 @@
                     rootNote = parseInt(targetRootVal); 
                 } else {
                     rootNote = treblePool.filter(n => n >= 60 && n <= 65)[Math.floor(Math.random() * treblePool.filter(n => n >= 60 && n <= 65).length)];
-                    currentUseFlats = flatRoots.includes(rootNote % 12); // 根據隨機抽到的根音決定升降記號
+                    currentUseFlats = flatRoots.includes(rootNote % 12);
                 }
                 const baseNote = (rootNote % 12) + 60;
                 
@@ -730,7 +725,7 @@
                                 document.getElementById('feedback-msg').className = "msg-correct";
                                 if (sequenceProgress === currentTargetNotes.length) {
                                     streak++; document.getElementById('streak-display').textContent = streak;
-                                    saveStats(streak); // 儲存數據
+                                    saveStats(streak); 
                                     document.getElementById('feedback-msg').textContent = "✨ 音階彈奏完美！準備下一題...";
                                     currentTargetNotes = []; setTimeout(() => generateQuestion(false), 1500);
                                 }
@@ -745,17 +740,15 @@
                             const isMatch = targetNoteNames.every((val, index) => val === activeNoteNames[index]);
                             if (isMatch) {
                                 streak++; document.getElementById('streak-display').textContent = streak;
-                                saveStats(streak); // 儲存數據
+                                saveStats(streak); 
                                 document.getElementById('feedback-msg').textContent = "✨ 判定正確！"; document.getElementById('feedback-msg').className = "msg-correct";
                                 
-                                // 級數推算與聽音測驗：答對時畫出樂譜作為解答/獎勵
                                 if (document.getElementById('practice-type').value === 'degree_progression' || isEarTrainingMode) {
                                     drawNotesOnStave('vexflow-canvas', Array.from(activeKeys), currentClef, currentUseFlats);
                                 }
                                 
                                 currentTargetNotes = []; setTimeout(() => generateQuestion(false), 1500);
                             } else if (isEarTrainingMode) {
-                                // 聽音測驗專屬防呆錯誤提示
                                 document.getElementById('feedback-msg').textContent = "❌ 音不對喔，仔細聽重播試試看！"; 
                                 document.getElementById('feedback-msg').className = "msg-error";
                             }
@@ -779,7 +772,7 @@
             }
         }
 
-        // --- 強化除錯版 Web MIDI 連線 ---
+        // --- 8. 強化除錯版 Web MIDI 連線 ---
         if (navigator.requestMIDIAccess) {
             navigator.requestMIDIAccess({ sysex: false }).then((midiAccess) => {
                 const inputs = midiAccess.inputs;
