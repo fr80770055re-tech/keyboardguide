@@ -275,10 +275,20 @@
             return { context, stave };
         }
 
-        function midiToVexFlow(noteNumber) {
-            const noteNames = ['c', 'c', 'd', 'd', 'e', 'f', 'f', 'g', 'g', 'a', 'a', 'b'];
-            const accidentals = [null, '#', null, '#', null, null, '#', null, '#', null, '#', null];
-            return { key: `${noteNames[noteNumber % 12]}/${Math.floor(noteNumber / 12) - 1}`, accidental: accidentals[noteNumber % 12] };
+function midiToVexFlow(noteNumber, useFlats = false) {
+            const sharpNames = ['c', 'c', 'd', 'd', 'e', 'f', 'f', 'g', 'g', 'a', 'a', 'b'];
+            const sharpAcc = [null, '#', null, '#', null, null, '#', null, '#', null, '#', null];
+            
+            const flatNames = ['c', 'd', 'd', 'e', 'e', 'f', 'g', 'g', 'a', 'a', 'b', 'b'];
+            const flatAcc = [null, 'b', null, 'b', null, null, 'b', null, 'b', null, 'b', null];
+
+            const names = useFlats ? flatNames : sharpNames;
+            const acc = useFlats ? flatAcc : sharpAcc;
+
+            return { 
+                key: `${names[noteNumber % 12]}/${Math.floor(noteNumber / 12) - 1}`, 
+                accidental: acc[noteNumber % 12] 
+            };
         }
 
         function drawNotesOnStave(divId, midiNotesArray, clef = 'treble') {
@@ -323,7 +333,11 @@
             'minor': [{ roman: 'i', int: 0, qual: 'Minor', ints: [0, 3, 7] }, { roman: 'ii°', int: 2, qual: 'Dim', ints: [0, 3, 6] }, { roman: 'III', int: 3, qual: 'Major', ints: [0, 4, 7] }, { roman: 'iv', int: 5, qual: 'Minor', ints: [0, 3, 7] }, { roman: 'v', int: 7, qual: 'Minor', ints: [0, 3, 7] }, { roman: 'VI', int: 8, qual: 'Major', ints: [0, 4, 7] }, { roman: 'VII', int: 10, qual: 'Major', ints: [0, 4, 7] }]
         };
         let currentDiatonicChords = [];
-        function getNoteName(midi) { return Tone.Midi(midi).toNote().replace(/[0-9]/g, ''); }
+       function getNoteName(midi, useFlats = false) {
+            const sharpNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+            const flatNames = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
+            return useFlats ? flatNames[midi % 12] : sharpNames[midi % 12];
+        }
 
         function updateDictionary() {
             const rootMidi = parseInt(document.getElementById('key-root-selector').value); const mode = document.getElementById('key-mode-selector').value;
