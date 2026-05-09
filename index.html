@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>音樂學習整合平台 - 雙譜號大師版</title>
+    <title>音樂學習整合平台 - 肌肉記憶特訓版</title>
     <link rel="icon" href="data:,">
     <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.2/build/cjs/vexflow.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
@@ -33,7 +33,7 @@
         #beat-indicator { width: 24px; height: 24px; border-radius: 50%; background-color: #ccc; transition: background-color 0.1s; }
         
         .practice-ui, .dict-controls { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; background: #e3f2fd; padding: 15px; border-radius: 5px; margin-bottom: 20px; border: 2px solid #90caf9;}
-        .settings-group { display: flex; gap: 15px; align-items: center; font-weight: bold; color: #0d47a1; }
+        .settings-group { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; font-weight: bold; color: #0d47a1; }
         select { padding: 5px 10px; font-size: 16px; border-radius: 4px; }
         
         #preview-btn { background-color: #17a2b8; color: white; }
@@ -48,7 +48,7 @@
         .score-board { font-size: 18px; font-weight: bold; color: #1565c0; }
         
         .canvas-container { display: flex; justify-content: center; align-items: center; min-height: 220px; background: #fffdf5; border: 1px solid #ddd; border-radius: 5px; flex-direction: column; padding: 20px;}
-        .hint-box { background: #fff3cd; color: #856404; padding: 10px; border-radius: 5px; border: 1px solid #ffeeba; margin-top: 15px; font-size: 16px; display: none; text-align: center; font-weight: bold; max-width: 90%;}
+        .hint-box { background: #fff3cd; color: #856404; padding: 10px; border-radius: 5px; border: 1px solid #ffeeba; margin-top: 15px; font-size: 16px; display: none; text-align: center; font-weight: bold; max-width: 90%; line-height: 1.5;}
         .feedback-msg { font-size: 20px; font-weight: bold; text-align: center; margin-top: 10px; min-height: 30px;}
         
         .formula-box { background: #f8f9fa; border-left: 4px solid #9c27b0; padding: 15px; margin-bottom: 20px; border-radius: 0 5px 5px 0;}
@@ -107,35 +107,52 @@
 
             <div class="practice-ui">
                 <div class="settings-group">
+                    <label>指定根音:</label>
+                    <select id="target-root-selector" style="background-color: #fff3cd; font-weight: bold;">
+                        <option value="random">🎲 隨機出題</option>
+                        <option value="60">C</option>
+                        <option value="61">C# / Db</option>
+                        <option value="62">D</option>
+                        <option value="63">D# / Eb</option>
+                        <option value="64">E</option>
+                        <option value="65">F</option>
+                        <option value="66">F# / Gb</option>
+                        <option value="67">G</option>
+                        <option value="68">G# / Ab</option>
+                        <option value="69">A</option>
+                        <option value="70">A# / Bb</option>
+                        <option value="71">B</option>
+                    </select>
+
                     <label>練習項目:</label>
                     <select id="practice-type">
-                        <option disabled>── 單音判讀 (五線譜位置) ──</option>
-                        <option value="single_treble" selected>單音判讀 (高音譜號 / 右手)</option>
-                        <option value="single_bass">單音判讀 (低音譜號 / 左手)</option>
-                        <option value="single_mixed">單音判讀 (高低音綜合訓練)</option>
+                        <option disabled>── 音階與運指練習 (流暢度訓練) ──</option>
+                        <option value="scale_major" selected>大調音階 (Major Scale, 1八度)</option>
+                        <option value="scale_natural_minor">自然小調音階 (Natural Minor)</option>
+                        <option value="scale_harmonic_minor">和聲小調音階 (Harmonic Minor)</option>
+                        <option value="scale_penta_major">大調五聲音階 (Major Pentatonic)</option>
                         <option disabled>── 和弦練習 ──</option>
                         <option value="chord_major">大三和弦 (Major)</option>
                         <option value="chord_minor">小三和弦 (Minor)</option>
                         <option value="chord_maj7">大七和弦 (Maj7)</option>
                         <option value="chord_dom7">屬七和弦 (Dom7)</option>
                         <option value="chord_min7">小七和弦 (Min7)</option>
+                        <option disabled>── 單音判讀 (五線譜位置) ──</option>
+                        <option value="single_treble">單音判讀 (高音譜號 / 右手)</option>
+                        <option value="single_bass">單音判讀 (低音譜號 / 左手)</option>
+                        <option value="single_mixed">單音判讀 (高低音綜合訓練)</option>
                         <option disabled>── 級數推算 (進階) ──</option>
                         <option value="degree_progression">流行級數推算 (大調 1~6 級)</option>
-                        <option disabled>── 音階與運指練習 ──</option>
-                        <option value="scale_major">大調音階 (Major Scale, 1八度)</option>
-                        <option value="scale_natural_minor">自然小調音階 (Natural Minor)</option>
-                        <option value="scale_harmonic_minor">和聲小調音階 (Harmonic Minor)</option>
-                        <option value="scale_penta_major">大調五聲音階 (Major Pentatonic)</option>
                     </select>
-                    <label><input type="checkbox" id="include-black-keys" checked> 包含黑鍵</label>
+                    <label><input type="checkbox" id="include-black-keys" checked> 包含黑鍵(隨機模式)</label>
                 </div>
                 
-                <div style="display: flex; gap: 10px;">
+                <div style="display: flex; gap: 10px; margin-top: 10px; width: 100%; justify-content: flex-end;">
                     <button id="preview-btn" disabled>👀 預覽 (自由練)</button>
                     <button id="practice-btn" disabled>🎯 開始練習</button>
                 </div>
                 
-                <div class="score-board">連對: <span id="streak-display">0</span></div>
+                <div class="score-board" style="width: 100%; text-align: right; margin-top: 10px;">連對: <span id="streak-display">0</span></div>
             </div>
             
             <div class="canvas-container">
@@ -174,10 +191,9 @@
                 <div class="settings-group">
                     <label>🎼 選擇調性:</label>
                     <select id="key-root-selector">
-                        <option value="60">C</option><option value="67">G</option>
-                        <option value="62">D</option><option value="69">A</option>
-                        <option value="64">E</option><option value="65">F</option>
-                        <option value="58">Bb</option><option value="63">Eb</option>
+                        <option value="60">C</option><option value="61">Db</option><option value="62">D</option><option value="63">Eb</option>
+                        <option value="64">E</option><option value="65">F</option><option value="66">Gb</option><option value="67">G</option>
+                        <option value="68">Ab</option><option value="69">A</option><option value="70">Bb</option><option value="71">B</option>
                     </select>
                     <select id="key-mode-selector">
                         <option value="major">大調 (Major)</option>
@@ -210,6 +226,13 @@
     </div>
 
     <script>
+        // PWA 註冊邏輯
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch(err => console.log('ServiceWorker 註冊失敗:', err));
+            });
+        }
+
         // --- SPA 頁籤切換 ---
         const tabBtns = document.querySelectorAll('.tab-btn');
         const tabContents = document.querySelectorAll('.tab-content');
@@ -366,21 +389,22 @@
         let isPreviewMode = false;
         let isSequentialMode = false; 
         let currentTargetNotes = []; 
-        let currentClef = 'treble'; // 追蹤目前的譜號狀態
+        let currentClef = 'treble';
         let sequenceProgress = 0; 
         let streak = 0;
         
         const handleSettingChange = () => { if (isPreviewMode) generateQuestion(true); };
         document.getElementById('practice-type').addEventListener('change', handleSettingChange);
         document.getElementById('include-black-keys').addEventListener('change', handleSettingChange);
+        document.getElementById('target-root-selector').addEventListener('change', handleSettingChange); // 監聽指定根音變化
 
         function generateQuestion(isPreview = false) {
             const type = document.getElementById('practice-type').value;
             const incBlack = document.getElementById('include-black-keys').checked;
+            const targetRootVal = document.getElementById('target-root-selector').value; // 取得指定的根音
             
             isSequentialMode = false; sequenceProgress = 0; currentClef = 'treble';
             
-            // 定義高低音題庫 (C4 設為分界點)
             const trebleWhite = [60, 62, 64, 65, 67, 69, 71, 72, 74, 76, 77, 79];
             const trebleBlack = [61, 63, 66, 68, 70, 73, 75, 78];
             const bassWhite = [41, 43, 45, 47, 48, 50, 52, 53, 55, 57, 59, 60];
@@ -391,28 +415,32 @@
 
             let intervals = []; let title = ""; let fingering = "";
 
-            // --- 1. 處理單音模式 (高音/低音/綜合) ---
+            // --- 1. 處理單音模式 ---
             if (type.startsWith('single_')) {
-                let pool = treblePool;
-                currentClef = 'treble';
+                let pool = treblePool; currentClef = 'treble';
+                if (type === 'single_bass') { pool = bassPool; currentClef = 'bass'; } 
+                else if (type === 'single_mixed') { if (Math.random() > 0.5) { pool = bassPool; currentClef = 'bass'; } }
                 
-                if (type === 'single_bass') { 
-                    pool = bassPool; 
-                    currentClef = 'bass'; 
-                } else if (type === 'single_mixed') {
-                    if (Math.random() > 0.5) { pool = bassPool; currentClef = 'bass'; }
+                // 如果有指定音高
+                if (targetRootVal !== 'random') {
+                    const baseClass = parseInt(targetRootVal) % 12;
+                    pool = pool.filter(n => n % 12 === baseClass);
                 }
                 
                 currentTargetNotes = [pool[Math.floor(Math.random() * pool.length)]];
                 document.getElementById('hint-box').style.display = 'none';
-                
-                // 單音練習：不論預覽還是測驗，都必須畫出音符！
                 drawNotesOnStave('vexflow-canvas', currentTargetNotes, currentClef);
             }
             // --- 2. 處理音階模式 ---
             else if (type.startsWith('scale_')) {
                 isSequentialMode = true;
-                const rootNote = treblePool.filter(n => n >= 60 && n <= 65)[Math.floor(Math.random() * treblePool.filter(n => n >= 60 && n <= 65).length)];
+                
+                let rootNote;
+                if (targetRootVal !== 'random') {
+                    rootNote = parseInt(targetRootVal); // 強制使用指定的 MIDI (60~71)
+                } else {
+                    rootNote = treblePool.filter(n => n >= 60 && n <= 65)[Math.floor(Math.random() * treblePool.filter(n => n >= 60 && n <= 65).length)];
+                }
                 const baseNote = (rootNote % 12) + 60;
                 
                 const majorFingerings = { 60: "1-2-3-1-2-3-4-5", 61: "2-3-1-2-3-4-1-2", 62: "1-2-3-1-2-3-4-5", 63: "3-1-2-3-4-1-2-3", 64: "1-2-3-1-2-3-4-5", 65: "1-2-3-4-1-2-3-4", 66: "2-3-4-1-2-3-1-2", 67: "1-2-3-1-2-3-4-5", 68: "3-4-1-2-3-1-2-3", 69: "1-2-3-1-2-3-4-5", 70: "4-1-2-3-1-2-3-4", 71: "1-2-3-1-2-3-4-5" };
@@ -421,7 +449,7 @@
                 switch(type) {
                     case 'scale_major': intervals = [0, 2, 4, 5, 7, 9, 11, 12]; title = "大調音階"; fingering = `右手: ${majorFingerings[baseNote]}`; break;
                     case 'scale_natural_minor': intervals = [0, 2, 3, 5, 7, 8, 10, 12]; title = "自然小調音階"; fingering = `右手: ${minorFingerings[baseNote]}`; break;
-                    case 'scale_harmonic_minor': intervals = [0, 2, 3, 5, 7, 8, 11, 12]; title = "和聲小調音階"; fingering = `右手: ${minorFingerings[baseNote]} (注意第7與第8音的增二度)`; break;
+                    case 'scale_harmonic_minor': intervals = [0, 2, 3, 5, 7, 8, 11, 12]; title = "和聲小調音階"; fingering = `右手: ${minorFingerings[baseNote]} (第7與第8音增二度)`; break;
                     case 'scale_penta_major': intervals = [0, 2, 4, 7, 9, 12]; title = "大調五聲音階"; fingering = "右手: 1-2-3-1-2-3"; break;
                 }
                 
@@ -432,18 +460,25 @@
             }
             // --- 3. 處理級數推算 ---
             else if (type === 'degree_progression') {
-                let keysPool = [{name: 'C 大調', root: 60}, {name: 'G 大調', root: 67}, {name: 'F 大調', root: 65}];
-                if (incBlack) keysPool = keysPool.concat([{name: 'D 大調', root: 62}, {name: 'Bb 大調', root: 58}, {name: 'A 大調', root: 69}]);
-                const targetKey = keysPool[Math.floor(Math.random() * keysPool.length)];
+                let targetKey;
+                if (targetRootVal !== 'random') {
+                    const rootMidi = parseInt(targetRootVal);
+                    const keyNames = {60:'C', 61:'Db', 62:'D', 63:'Eb', 64:'E', 65:'F', 66:'Gb', 67:'G', 68:'Ab', 69:'A', 70:'Bb', 71:'B'};
+                    targetKey = { name: keyNames[rootMidi] + ' 大調', root: rootMidi };
+                } else {
+                    let keysPool = [{name: 'C 大調', root: 60}, {name: 'G 大調', root: 67}, {name: 'F 大調', root: 65}];
+                    if (incBlack) keysPool = keysPool.concat([{name: 'D 大調', root: 62}, {name: 'Bb 大調', root: 58}, {name: 'A 大調', root: 69}]);
+                    targetKey = keysPool[Math.floor(Math.random() * keysPool.length)];
+                }
+
                 const targetDegree = scalesFormula['major'][Math.floor(Math.random() * 6)];
-                
                 let chordRoot = targetKey.root + targetDegree.int; if (chordRoot > 72) chordRoot -= 12;
                 currentTargetNotes = targetDegree.ints.map(int => chordRoot + int);
                 
                 if (isPreview) {
                     drawNotesOnStave('vexflow-canvas', currentTargetNotes, currentClef);
                 } else {
-                    drawEmptyStave('vexflow-canvas', currentClef, 200); // 盲測
+                    drawEmptyStave('vexflow-canvas', currentClef, 200); 
                 }
                 
                 document.getElementById('hint-box').innerHTML = `<div style="font-size: 20px; margin-bottom: 10px;">請推算並彈奏：</div><div style="font-size: 28px; color: #e91e63;">${targetKey.name} 的 ${targetDegree.roman} 級和弦</div><div style="font-size: 14px; margin-top: 10px; color: #666;">(提示：${targetKey.name} 的 ${targetDegree.roman} 級是 ${getNoteName(chordRoot)}${targetDegree.qual==='Minor'?'m':''})</div>`;
@@ -451,7 +486,13 @@
             }
             // --- 4. 一般和弦判讀 ---
             else {
-                const rootNote = treblePool.filter(n => n <= 67)[Math.floor(Math.random() * treblePool.filter(n => n <= 67).length)];
+                let rootNote;
+                if (targetRootVal !== 'random') {
+                    rootNote = parseInt(targetRootVal);
+                } else {
+                    rootNote = treblePool.filter(n => n <= 67)[Math.floor(Math.random() * treblePool.filter(n => n <= 67).length)];
+                }
+
                 switch(type) {
                     case 'chord_major': intervals = [0,4,7]; title = "大三和弦"; break;
                     case 'chord_minor': intervals = [0,3,7]; title = "小三和弦"; break;
@@ -499,7 +540,9 @@
             isPracticeMode = !isPracticeMode;
             if (isPracticeMode) {
                 e.target.textContent = "⏹️ 結束練習"; e.target.classList.add('active');
-                document.getElementById('practice-type').disabled = true; document.getElementById('include-black-keys').disabled = true;
+                document.getElementById('practice-type').disabled = true; 
+                document.getElementById('include-black-keys').disabled = true;
+                document.getElementById('target-root-selector').disabled = true; // 鎖定指定根音選單
                 document.getElementById('preview-btn').disabled = true;
                 
                 streak = 0; document.getElementById('streak-display').textContent = streak;
@@ -508,7 +551,6 @@
                 if (isPreviewMode) {
                     isPreviewMode = false;
                     document.getElementById('preview-btn').textContent = "👀 預覽 (自由練)"; document.getElementById('preview-btn').classList.remove('active');
-                    
                     sequenceProgress = 0;
                     const type = document.getElementById('practice-type').value;
                     const fb = document.getElementById('feedback-msg');
@@ -526,7 +568,9 @@
                 }
             } else {
                 e.target.textContent = "🎯 開始練習"; e.target.classList.remove('active');
-                document.getElementById('practice-type').disabled = false; document.getElementById('include-black-keys').disabled = false;
+                document.getElementById('practice-type').disabled = false; 
+                document.getElementById('include-black-keys').disabled = false;
+                document.getElementById('target-root-selector').disabled = false; // 解鎖指定根音選單
                 document.getElementById('preview-btn').disabled = false;
                 
                 currentTargetNotes = []; isSequentialMode = false; currentClef = 'treble';
@@ -546,7 +590,6 @@
                 if (document.getElementById('tab-practice').classList.contains('active')) {
                     if (!isPracticeMode) {
                         if (!isPreviewMode) {
-                            // 動態切換譜號：如果平均音高低於 60，就用低音譜號畫
                             const avgPitch = Array.from(activeKeys).reduce((a,b)=>a+b,0)/activeKeys.size;
                             drawNotesOnStave('vexflow-canvas', Array.from(activeKeys), avgPitch < 60 ? 'bass' : 'treble');
                         }
