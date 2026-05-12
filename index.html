@@ -2,98 +2,168 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>音樂學習整合平台 - 延伸和弦與琶音特訓版</title>
+    <title>音樂學習整合平台 - 毛玻璃美學版</title>
     <link rel="icon" href="data:,">
     <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.2/build/cjs/vexflow.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
-        body { font-family: sans-serif; padding: 20px; background-color: #f7f9fc; }
-        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px;}
+        /* --- 全局與漸層背景 --- */
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            padding: 20px; 
+            /* 低彩度米白至淺薄荷綠漸層 */
+            background: linear-gradient(135deg, #fdfbf7 0%, #e8f0eb 100%); 
+            min-height: 100vh;
+            color: #4a5550;
+            margin: 0;
+        }
+
+        /* --- 毛玻璃卡片 (Glassmorphism) --- */
+        .card { 
+            background: rgba(255, 255, 255, 0.45); 
+            backdrop-filter: blur(16px); 
+            -webkit-backdrop-filter: blur(16px);
+            padding: 25px; 
+            border-radius: 20px; 
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            box-shadow: 0 10px 40px rgba(130, 150, 140, 0.1); 
+            margin-bottom: 25px;
+        }
         
-        /* 頂部控制列與儀表板 */
         .top-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; margin-bottom: 20px; flex-wrap: wrap;}
         .global-controls { flex: 1; display: flex; flex-direction: column; gap: 10px; min-width: 300px;}
         .status-row { display: flex; gap: 15px; align-items: center; flex-wrap: wrap;}
-        #status { padding: 10px; border-radius: 5px; font-weight: bold; background: #e2e3e5; color: #383d41; flex-grow: 1; text-align: center;}
-        .connected { background: #d4edda !important; color: #155724 !important; }
-        .error { background: #f8d7da !important; color: #721c24 !important; }
-        button { padding: 8px 16px; font-size: 16px; font-weight: bold; cursor: pointer; border: none; border-radius: 5px; transition: background 0.3s; }
-        #audio-btn { background-color: #007bff; color: white; white-space: nowrap;}
-        #audio-btn:disabled { background-color: #28a745; cursor: default; }
+        
+        #status { 
+            padding: 10px 15px; border-radius: 12px; font-weight: bold; font-size: 14px;
+            background: rgba(255, 255, 255, 0.5); border: 1px solid rgba(255,255,255,0.8); flex-grow: 1; text-align: center;
+        }
+        .connected { color: #5a8a6f !important; }
+        .error { color: #b87a7a !important; }
 
-        .vol-control { display: flex; align-items: center; gap: 8px; font-weight: bold; color: #495057; font-size: 14px; background: #e9ecef; padding: 5px 10px; border-radius: 20px;}
-        .vol-control input[type=range] { width: 90px; cursor: pointer;}
+        /* --- 柔和系按鈕設計 --- */
+        button { 
+            padding: 10px 20px; font-size: 15px; font-weight: bold; cursor: pointer; 
+            border: 1px solid rgba(255,255,255,0.6); border-radius: 12px; 
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            backdrop-filter: blur(4px);
+            color: #fff;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        button:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.08); }
+        button:active { transform: translateY(0); }
+        
+        /* 依功能分配低彩度顏色 */
+        #audio-btn { background-color: #8fc5a3; } /* 主薄荷綠 */
+        #audio-btn:disabled { background-color: #b5c4b9; cursor: default; transform: none; box-shadow: none; color: #f0f0f0; text-shadow: none;}
+        
+        #preview-btn { background-color: #a6cbb5; color: #4a5550; text-shadow: none; } /* 淺薄荷綠 */
+        #preview-btn.active { background-color: #83ab93; color: white; border-color: #6a8c78; }
+        
+        #practice-btn { background-color: #d1bfae; } /* 柔和沙色 */
+        #practice-btn.active { background-color: #c49987; }
+        #practice-btn:disabled, #preview-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
+        
+        #replay-btn { background-color: #b5adc4; } /* 柔和紫灰 */
+        #metro-play-btn { background-color: #aeb5b0; color: white;}
+        .metro-active { background-color: #c49987 !important; }
 
-        .stats-dashboard { flex: 1; background: #fff3cd; border: 2px solid #ffeeba; border-radius: 8px; padding: 15px; min-width: 300px; display: flex; justify-content: space-around; align-items: center; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);}
+        .prog-btn { background-color: #aab5a6; color: white; border-radius: 20px;}
+        .prog-btn:hover { background-color: #93a18e; }
+
+        /* --- UI 面板毛玻璃化 --- */
+        .vol-control, .metronome-ui, .practice-ui, .dict-controls, .formula-box, .stats-dashboard { 
+            background: rgba(255, 255, 255, 0.5); 
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            border-radius: 16px; 
+            padding: 15px 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+        }
+        
+        .vol-control { padding: 8px 15px; border-radius: 20px; gap: 10px;}
+        .vol-control input[type=range], #bpm-slider { accent-color: #8fc5a3; cursor: pointer; }
+        
+        .metronome-ui { margin-bottom: 20px; gap: 15px;}
+        .practice-ui { margin-bottom: 20px; align-items: stretch; flex-direction: column; gap: 15px;}
+        .practice-top-row { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 15px;}
+        .settings-group { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; font-weight: bold; color: #62756a; font-size: 15px;}
+        select { padding: 8px 12px; font-size: 15px; border-radius: 8px; border: 1px solid #d1d8d3; background: rgba(255,255,255,0.8); color: #4a5550; outline: none; transition: 0.2s;}
+        select:focus { border-color: #8fc5a3; box-shadow: 0 0 0 3px rgba(143, 197, 163, 0.2); }
+
+        /* --- 數據儀表板 --- */
+        .stats-dashboard { flex: 1; min-width: 300px; display: flex; justify-content: space-around; align-items: center; background: linear-gradient(120deg, rgba(255,255,255,0.7), rgba(240,248,242,0.5));}
         .stat-item { text-align: center; }
-        .stat-value { font-size: 24px; font-weight: bold; color: #856404; display: block;}
-        .stat-label { font-size: 12px; color: #666; font-weight: bold; text-transform: uppercase;}
+        .stat-value { font-size: 28px; font-weight: 900; color: #5a8a6f; display: block; font-family: 'Courier New', Courier, monospace;}
+        .stat-label { font-size: 12px; color: #85968b; font-weight: bold; letter-spacing: 1px;}
+        #reset-stats-btn { background: transparent; color: #b87a7a; border: 1px solid rgba(184, 122, 122, 0.4); padding: 4px 10px; font-size: 12px; text-shadow: none;}
+        #reset-stats-btn:hover { background: rgba(184, 122, 122, 0.1); }
 
-        .tabs-nav { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 3px solid #e0e0e0; padding-bottom: 5px; }
-        .tab-btn { background: #f8f9fa; color: #555; border: 1px solid #ccc; border-bottom: none; border-radius: 8px 8px 0 0; padding: 12px 24px; font-size: 18px; transition: 0.2s; position: relative; top: 5px;}
-        .tab-btn:hover { background: #e9ecef; }
-        .tab-btn.active { background: white; color: #007bff; border: 3px solid #e0e0e0; border-bottom: 5px solid white; top: 5px; z-index: 10; }
-        .tab-content { display: none; animation: fadeIn 0.3s; }
-        .tab-content.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* --- 頁籤與優雅的漸層動畫 --- */
+        .tabs-nav { display: flex; gap: 8px; margin-bottom: 25px; border-bottom: 2px solid rgba(143, 197, 163, 0.3); padding-bottom: 0;}
+        .tab-btn { 
+            background: transparent; color: #85968b; border: none; border-bottom: 3px solid transparent; 
+            border-radius: 0; padding: 12px 24px; font-size: 16px; transition: all 0.3s ease;
+            text-shadow: none; box-shadow: none;
+        }
+        .tab-btn:hover { color: #5a8a6f; transform: none; background: rgba(255,255,255,0.3);}
+        .tab-btn.active { color: #5a8a6f; border-bottom: 3px solid #8fc5a3; font-weight: bold; }
+        
+        .tab-content { display: none; }
+        .tab-content.active { 
+            display: block; 
+            /* 柔和浮現動畫 */
+            animation: smoothFadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
+        }
+        
+        @keyframes smoothFadeUp { 
+            0% { opacity: 0; transform: translateY(15px) scale(0.98); } 
+            100% { opacity: 1; transform: translateY(0) scale(1); } 
+        }
 
-        .metronome-ui { display: flex; align-items: center; flex-wrap: wrap; gap: 15px; background: #f1f3f5; padding: 15px; border-radius: 5px; margin-bottom: 20px; border: 2px solid #ced4da;}
-        #metro-play-btn { background-color: #6c757d; color: white; }
-        #metro-play-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .metro-active { background-color: #dc3545 !important; }
-        #beat-indicator { width: 24px; height: 24px; border-radius: 50%; background-color: #ccc; transition: background-color 0.1s; }
-        
-        .practice-ui, .dict-controls { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; background: #e3f2fd; padding: 15px; border-radius: 5px; margin-bottom: 20px; border: 2px solid #90caf9;}
-        .settings-group { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; font-weight: bold; color: #0d47a1; }
-        select { padding: 5px 10px; font-size: 16px; border-radius: 4px; }
-        
-        #preview-btn { background-color: #17a2b8; color: white; }
-        #preview-btn:hover { background-color: #138496; }
-        #preview-btn.active { background-color: #117a8b; border: 2px solid #0c5460; box-shadow: inset 0 3px 5px rgba(0,0,0,0.2); }
-        #preview-btn:disabled { background-color: #a1d6e2; cursor: not-allowed; border: none; box-shadow: none;}
-        
-        #practice-btn { background-color: #ff9800; color: white; }
-        #practice-btn.active { background-color: #f44336; }
-        #practice-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        
-        #replay-btn { background-color: #9c27b0; color: white; display: none;}
-        #replay-btn:hover { background-color: #7b1fa2; }
+        #beat-indicator { width: 20px; height: 20px; border-radius: 50%; background-color: rgba(0,0,0,0.1); transition: background-color 0.1s; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);}
 
-        .score-board { font-size: 18px; font-weight: bold; color: #1565c0; }
+        /* --- 樂譜畫布與提示區 --- */
+        .canvas-container { 
+            display: flex; justify-content: center; align-items: center; min-height: 240px; 
+            background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255,255,255,0.9); 
+            border-radius: 16px; flex-direction: column; padding: 25px;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.02);
+        }
+        .hint-box { 
+            background: rgba(235, 240, 237, 0.8); color: #5a7566; padding: 12px 20px; 
+            border-radius: 12px; border: 1px solid rgba(255,255,255,0.6); 
+            margin-top: 20px; font-size: 15px; display: none; text-align: center; line-height: 1.6;
+        }
+        .feedback-msg { font-size: 18px; font-weight: bold; text-align: center; margin-top: 15px; min-height: 30px; letter-spacing: 0.5px;}
         
-        .canvas-container { display: flex; justify-content: center; align-items: center; min-height: 220px; background: #fffdf5; border: 1px solid #ddd; border-radius: 5px; flex-direction: column; padding: 20px;}
-        .hint-box { background: #fff3cd; color: #856404; padding: 10px; border-radius: 5px; border: 1px solid #ffeeba; margin-top: 15px; font-size: 16px; display: none; text-align: center; font-weight: bold; max-width: 90%; line-height: 1.5;}
-        .feedback-msg { font-size: 20px; font-weight: bold; text-align: center; margin-top: 10px; min-height: 30px;}
-        
-        .formula-box { background: #f8f9fa; border-left: 4px solid #9c27b0; padding: 15px; margin-bottom: 20px; border-radius: 0 5px 5px 0;}
-        .formula-box h4 { margin: 0 0 10px 0; color: #333; }
-        .formula-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; font-size: 14px; color: #555;}
-        
-        .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; margin-bottom: 20px;}
-        .dict-card { background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 15px; text-align: center; cursor: pointer; transition: 0.2s; position: relative;}
-        .dict-card:hover, .dict-card.playing { border-color: #007bff; transform: translateY(-3px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        .dict-card.playing { background-color: #e3f2fd; }
-        .dict-card h4 { margin: 10px 0 5px 0; color: #2c3e50; font-size: 16px;}
-        
-        .degree-card h2 { margin: 0 0 5px 0; color: #e91e63; font-size: 28px; }
-        .degree-card h4 { margin: 0; color: #2c3e50; font-size: 20px; }
-        .degree-card p { margin: 5px 0 0 0; color: #7f8c8d; font-size: 13px; }
-        
-        .progression-btns { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap;}
-        .prog-btn { background-color: #9c27b0; color: white; }
-        .prog-btn:hover { background-color: #7b1fa2; }
-        .prog-btn:disabled { background-color: #ccc; cursor: not-allowed; }
+        .msg-waiting { color: #85968b; }
+        .msg-correct { color: #6a9c80; }
+        .msg-error { color: #c48b8b; }
+        .msg-preview { color: #769fb6; }
+        .chord-detected { color: #8a7b9c; font-weight: 900; font-size: 22px; }
 
-        .relative-key-badge { background: #ffeb3b; color: #333; padding: 5px 10px; border-radius: 20px; font-size: 14px; font-weight: bold; margin-left: 10px; display: inline-block;}
-        .msg-error { color: #dc3545; }
-        .msg-correct { color: #28a745; }
-        .msg-waiting { color: #555; }
-        .msg-preview { color: #17a2b8; }
+        /* --- 字典卡片 --- */
+        .formula-box h4 { margin: 0 0 15px 0; color: #62756a; }
+        .formula-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; font-size: 14px; color: #77887e;}
         
-        /* 和弦偵測亮點樣式 */
-        .chord-detected { color: #9c27b0; font-weight: 900; font-size: 24px; text-shadow: 1px 1px 2px rgba(0,0,0,0.1); }
-
-        #log { height: 100px; overflow-y: auto; background: #282c34; color: #98c379; padding: 10px; font-family: monospace; border-radius: 5px; font-size: 14px; }
+        .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; margin-bottom: 25px;}
+        .dict-card { 
+            background: rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.8); border-radius: 16px; 
+            padding: 20px 15px; text-align: center; cursor: pointer; transition: 0.3s cubic-bezier(0.16, 1, 0.3, 1); 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.03); backdrop-filter: blur(4px);
+        }
+        .dict-card:hover, .dict-card.playing { border-color: #8fc5a3; transform: translateY(-4px); box-shadow: 0 10px 20px rgba(143, 197, 163, 0.15); }
+        .dict-card.playing { background-color: rgba(232, 242, 235, 0.8); }
+        
+        .degree-card h2 { margin: 0 0 8px 0; color: #c49987; font-size: 26px; }
+        .degree-card h4 { margin: 0; color: #5a7566; font-size: 18px; }
+        .degree-card p { margin: 6px 0 0 0; color: #a1b0a7; font-size: 12px; font-weight: bold;}
+        
+        .relative-key-badge { background: rgba(255,255,255,0.7); color: #77887e; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; margin-left: 10px; border: 1px solid #d1d8d3;}
+        
+        #active-keys-display { font-weight:bold; color:#a68a9c; margin-top:10px; font-size: 14px;}
+        #log { height: 80px; overflow-y: auto; background: rgba(50, 56, 52, 0.8); color: #a8d5ba; padding: 12px; font-family: monospace; border-radius: 12px; font-size: 13px; backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.1);}
     </style>
 </head>
 <body>
@@ -113,14 +183,14 @@
             <div class="stats-dashboard">
                 <div class="stat-item">
                     <span class="stat-value" id="stat-total-correct">0</span>
-                    <span class="stat-label">🏆 歷史總答對</span>
+                    <span class="stat-label">歷史總答對</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-value" id="stat-highest-streak" style="color:#e91e63;">0</span>
-                    <span class="stat-label">🔥 最高連對紀錄</span>
+                    <span class="stat-value" id="stat-highest-streak" style="color:#c49987;">0</span>
+                    <span class="stat-label">最高連對紀錄</span>
                 </div>
                 <div class="stat-item">
-                    <button id="reset-stats-btn" style="background:transparent; color:#dc3545; font-size:12px; border:1px solid #dc3545; padding:4px 8px;">清除紀錄</button>
+                    <button id="reset-stats-btn">清除紀錄</button>
                 </div>
             </div>
         </div>
@@ -135,13 +205,17 @@
         <div id="tab-practice" class="tab-content active">
             <div class="metronome-ui">
                 <button id="metro-play-btn" disabled>⏱️ 播放節拍器</button>
-                <label>BPM: <span id="bpm-display">120</span></label>
-                <input type="range" id="bpm-slider" min="40" max="240" value="120">
-                <label>拍號:</label>
-                <select id="time-sig-select">
-                    <option value="2">2/4</option><option value="3">3/4</option><option value="4" selected>4/4</option><option value="6">6/8</option>
-                </select>
-                <div class="vol-control">
+                <div class="vol-control" style="background:transparent; border:1px solid rgba(255,255,255,0.5);">
+                    <label>BPM: <span id="bpm-display">120</span></label>
+                    <input type="range" id="bpm-slider" min="40" max="240" value="120">
+                </div>
+                <div class="settings-group">
+                    <label>拍號:</label>
+                    <select id="time-sig-select">
+                        <option value="2">2/4</option><option value="3">3/4</option><option value="4" selected>4/4</option><option value="6">6/8</option>
+                    </select>
+                </div>
+                <div class="vol-control" style="background:transparent; border:1px solid rgba(255,255,255,0.5);">
                     <label>🥁 節拍器音量:</label>
                     <input type="range" id="metro-vol-slider" min="0" max="100" value="60">
                 </div>
@@ -149,61 +223,62 @@
             </div>
 
             <div class="practice-ui">
-                <div class="settings-group">
-                    <label>指定根音:</label>
-                    <select id="target-root-selector" style="background-color: #fff3cd; font-weight: bold;">
-                        <option value="random">🎲 隨機出題</option>
-                        <option value="60">C</option><option value="61">Db / C#</option><option value="62">D</option><option value="63">Eb / D#</option>
-                        <option value="64">E</option><option value="65">F</option><option value="66">Gb / F#</option><option value="67">G</option>
-                        <option value="68">Ab / G#</option><option value="69">A</option><option value="70">Bb / A#</option><option value="71">B</option>
-                    </select>
+                <div class="practice-top-row">
+                    <div class="settings-group">
+                        <label>指定根音:</label>
+                        <select id="target-root-selector" style="background-color: rgba(255, 255, 255, 0.9);">
+                            <option value="random">🎲 隨機出題</option>
+                            <option value="60">C</option><option value="61">Db / C#</option><option value="62">D</option><option value="63">Eb / D#</option>
+                            <option value="64">E</option><option value="65">F</option><option value="66">Gb / F#</option><option value="67">G</option>
+                            <option value="68">Ab / G#</option><option value="69">A</option><option value="70">Bb / A#</option><option value="71">B</option>
+                        </select>
 
-                    <label>練習項目:</label>
-                    <select id="practice-type">
-                        <option disabled>── 👂 聽音辨位 (Ear Training) ──</option>
-                        <option value="ear_single">聽音測驗 (單音)</option>
-                        <option value="ear_chord_major">聽音測驗 (大三和弦)</option>
-                        <option value="ear_chord_minor">聽音測驗 (小三和弦)</option>
-                        <option disabled>── 單音判讀 (五線譜位置) ──</option>
-                        <option value="single_treble">單音判讀 (高音譜號 / 右手)</option>
-                        <option value="single_bass">單音判讀 (低音譜號 / 左手)</option>
-                        <option value="single_mixed">單音判讀 (高低音綜合訓練)</option>
-                        <option disabled>── 🎵 音階與運指練習 ──</option>
-                        <option value="scale_major" selected>大調音階 (Major Scale, 1八度)</option>
-                        <option value="scale_natural_minor">自然小調音階 (Natural Minor)</option>
-                        <option value="scale_harmonic_minor">和聲小調音階 (Harmonic Minor)</option>
-                        <option value="scale_penta_major">大調五聲音階 (Major Pentatonic)</option>
-                        <option disabled>── 🎹 琶音與指法練習 (Arpeggio) ──</option>
-                        <option value="arp_major">大三和弦琶音 (1八度)</option>
-                        <option value="arp_minor">小三和弦琶音 (1八度)</option>
-                        <option value="arp_maj7">大七和弦琶音 (1八度)</option>
-                        <option value="arp_dom7">屬七和弦琶音 (1八度)</option>
-                        <option disabled>── 和弦判定練習 ──</option>
-                        <option value="chord_major">大三和弦 (Major)</option>
-                        <option value="chord_minor">小三和弦 (Minor)</option>
-                        <option value="chord_maj7">大七和弦 (Maj7)</option>
-                        <option value="chord_dom7">屬七和弦 (Dom7)</option>
-                        <option value="chord_min7">小七和弦 (Min7)</option>
-                        <option disabled>── 級數推算 (進階) ──</option>
-                        <option value="degree_progression">流行級數推算 (大調 1~6 級)</option>
-                    </select>
-                    <label><input type="checkbox" id="include-black-keys" checked> 包含黑鍵(隨機模式)</label>
+                        <label>練習項目:</label>
+                        <select id="practice-type">
+                            <option disabled>── 👂 聽音辨位 (Ear Training) ──</option>
+                            <option value="ear_single">聽音測驗 (單音)</option>
+                            <option value="ear_chord_major">聽音測驗 (大三和弦)</option>
+                            <option value="ear_chord_minor">聽音測驗 (小三和弦)</option>
+                            <option disabled>── 單音判讀 (五線譜位置) ──</option>
+                            <option value="single_treble">單音判讀 (高音譜號 / 右手)</option>
+                            <option value="single_bass">單音判讀 (低音譜號 / 左手)</option>
+                            <option value="single_mixed">單音判讀 (高低音綜合訓練)</option>
+                            <option disabled>── 🎵 音階與運指練習 ──</option>
+                            <option value="scale_major" selected>大調音階 (Major Scale, 1八度)</option>
+                            <option value="scale_natural_minor">自然小調音階 (Natural Minor)</option>
+                            <option value="scale_harmonic_minor">和聲小調音階 (Harmonic Minor)</option>
+                            <option value="scale_penta_major">大調五聲音階 (Major Pentatonic)</option>
+                            <option disabled>── 🎹 琶音與指法練習 (Arpeggio) ──</option>
+                            <option value="arp_major">大三和弦琶音 (1八度)</option>
+                            <option value="arp_minor">小三和弦琶音 (1八度)</option>
+                            <option value="arp_maj7">大七和弦琶音 (1八度)</option>
+                            <option value="arp_dom7">屬七和弦琶音 (1八度)</option>
+                            <option disabled>── 和弦判定練習 ──</option>
+                            <option value="chord_major">大三和弦 (Major)</option>
+                            <option value="chord_minor">小三和弦 (Minor)</option>
+                            <option value="chord_maj7">大七和弦 (Maj7)</option>
+                            <option value="chord_dom7">屬七和弦 (Dom7)</option>
+                            <option value="chord_min7">小七和弦 (Min7)</option>
+                            <option disabled>── 級數推算 (進階) ──</option>
+                            <option value="degree_progression">流行級數推算 (大調 1~6 級)</option>
+                        </select>
+                        <label style="font-size: 13px; font-weight: normal;"><input type="checkbox" id="include-black-keys" checked> 隨機包含黑鍵</label>
+                    </div>
                 </div>
                 
-                <div style="display: flex; gap: 10px; margin-top: 10px; width: 100%; justify-content: flex-end; align-items: center;">
-                    <button id="replay-btn">🎵 聽不清楚? 重播聲音</button>
+                <div style="display: flex; gap: 12px; width: 100%; justify-content: flex-end; align-items: center; border-top: 1px solid rgba(255,255,255,0.6); padding-top: 15px;">
+                    <span style="margin-right: auto; font-size: 14px; font-weight: bold; color: #77887e;">本次連對: <span id="streak-display" style="color: #5a8a6f; font-size: 16px;">0</span></span>
+                    <button id="replay-btn">🎵 聽不清楚? 重播</button>
                     <button id="preview-btn" disabled>👀 預覽 (自由練)</button>
                     <button id="practice-btn" disabled>🎯 開始練習</button>
                 </div>
-                
-                <div class="score-board" style="width: 100%; text-align: right; margin-top: 10px;">本次連對: <span id="streak-display">0</span></div>
             </div>
             
             <div class="canvas-container">
                 <div id="vexflow-canvas"></div>
                 <div id="hint-box" class="hint-box"></div>
                 <div id="feedback-msg" class="feedback-msg msg-waiting">自由彈奏模式 (可自動偵測延伸和弦)</div>
-                <div id="active-keys-display" style="font-weight:bold; color:#d81b60; margin-top:5px;">目前按住: 無</div>
+                <div id="active-keys-display">目前按住: 無</div>
             </div>
         </div>
 
@@ -222,15 +297,15 @@
             <div class="formula-box">
                 <h4>📐 常用和弦推算公式 (以音階度數表示)</h4>
                 <div class="formula-grid">
-                    <div><b>大三和弦 (Maj):</b> 1 + 3 + 5</div>
-                    <div><b>小三和弦 (Min):</b> 1 + b3 + 5</div>
-                    <div><b>減三和弦 (Dim):</b> 1 + b3 + b5</div>
-                    <div><b>掛四和弦 (Sus4):</b> 1 + 4 + 5</div>
-                    <div><b>大七和弦 (Maj7):</b> 1 + 3 + 5 + 7</div>
-                    <div><b>屬七和弦 (Dom7):</b> 1 + 3 + 5 + b7</div>
-                    <div><b>小七和弦 (Min7):</b> 1 + b3 + 5 + b7</div>
-                    <div><b>屬九和弦 (Dom9):</b> 1 + 3 + 5 + b7 + 2(9)</div>
-                    <div><b>加九和弦 (Add9):</b> 1 + 3 + 5 + 2(9)</div>
+                    <div><b>大三 (Maj):</b> 1 + 3 + 5</div>
+                    <div><b>小三 (Min):</b> 1 + b3 + 5</div>
+                    <div><b>減三 (Dim):</b> 1 + b3 + b5</div>
+                    <div><b>掛四 (Sus4):</b> 1 + 4 + 5</div>
+                    <div><b>大七 (Maj7):</b> 1 + 3 + 5 + 7</div>
+                    <div><b>屬七 (Dom7):</b> 1 + 3 + 5 + b7</div>
+                    <div><b>小七 (Min7):</b> 1 + b3 + 5 + b7</div>
+                    <div><b>屬九 (Dom9):</b> 1 + 3 + 5 + b7 + 2</div>
+                    <div><b>加九 (Add9):</b> 1 + 3 + 5 + 2</div>
                 </div>
             </div>
 
@@ -252,23 +327,23 @@
 
             <div class="card-grid" id="degree-cards-container"></div>
 
-            <h4 style="margin-bottom: 10px; color: #2c3e50;">🎧 常見進行播放</h4>
+            <h4 style="margin-bottom: 15px; color: #62756a; text-align: center;">🎧 常見進行播放</h4>
             <div class="progression-btns">
                 <button class="prog-btn major-prog" id="prog-1645-btn" disabled>▶️ 1645 (I-vi-IV-V)</button>
                 <button class="prog-btn major-prog" id="prog-4536-btn" disabled>▶️ 4536 (IV-V-iii-vi)</button>
                 <button class="prog-btn major-prog" id="prog-251-btn" disabled>▶️ 251 (ii-V-I)</button>
-                <button class="prog-btn minor-prog" id="prog-minor-btn" style="display:none;" disabled>▶️ 小調流行 451 (iv-v-i)</button>
+                <button class="prog-btn minor-prog" id="prog-minor-btn" style="display:none;" disabled>▶️ 小調 451 (iv-v-i)</button>
             </div>
 
-            <div class="canvas-container">
+            <div class="canvas-container" style="min-height: 180px;">
                 <div id="dict-chord-canvas"></div>
-                <div id="dict-chord-hint" class="hint-box" style="display: block;">請在上方選擇一個和弦級數</div>
+                <div id="dict-chord-hint" class="hint-box" style="display: block; margin-top: 10px;">請在上方選擇一個和弦級數</div>
             </div>
         </div>
     </div>
 
-    <div class="card">
-        <h3>系統紀錄 (Global)</h3>
+    <div class="card" style="margin-bottom: 0;">
+        <h4 style="margin: 0 0 10px 0; color: #62756a;">系統紀錄</h4>
         <div id="log">等待 MIDI 訊號與音源啟用...<br></div>
     </div>
 
@@ -419,7 +494,7 @@
 
         let timeSignature = 4; let currentBeat = 0; let isMetroPlaying = false;
         Tone.Transport.scheduleRepeat((time) => {
-            Tone.Draw.schedule(() => { document.getElementById('beat-indicator').style.backgroundColor = (currentBeat % timeSignature === 0) ? '#ff4757' : '#2ed573'; setTimeout(() => { document.getElementById('beat-indicator').style.backgroundColor = '#ccc'; }, 100); }, time);
+            Tone.Draw.schedule(() => { document.getElementById('beat-indicator').style.backgroundColor = (currentBeat % timeSignature === 0) ? '#e9aaab' : '#a8d5ba'; setTimeout(() => { document.getElementById('beat-indicator').style.backgroundColor = 'rgba(0,0,0,0.1)'; }, 100); }, time);
             if (currentBeat % timeSignature === 0) clickHigh.triggerAttackRelease("C5", "32n", time); else clickLow.triggerAttackRelease("C4", "32n", time); currentBeat++;
         }, "4n");
         document.getElementById('metro-play-btn').onclick = (e) => {
@@ -429,7 +504,6 @@
         document.getElementById('bpm-slider').oninput = (e) => { bpm = e.target.value; document.getElementById('bpm-display').textContent = bpm; Tone.Transport.bpm.value = bpm; };
         document.getElementById('time-sig-select').onchange = (e) => { timeSignature = parseInt(e.target.value); currentBeat = 0; };
 
-        // --- 核心測驗與【延伸和弦偵測】邏輯 ---
         let isPracticeMode = false; let isPreviewMode = false; let isSequentialMode = false; let isEarTrainingMode = false; 
         let currentTargetNotes = []; let currentClef = 'treble'; let currentUseFlats = false; let sequenceProgress = 0; let streak = 0;
         
@@ -437,24 +511,22 @@
         document.getElementById('practice-type').addEventListener('change', handleSettingChange); document.getElementById('include-black-keys').addEventListener('change', handleSettingChange); document.getElementById('target-root-selector').addEventListener('change', handleSettingChange); 
         document.getElementById('replay-btn').onclick = () => { if (currentTargetNotes.length > 0 && isAudioUnlocked) synth.triggerAttackRelease(currentTargetNotes.map(n => Tone.Midi(n).toNote()), "2n", Tone.now()); };
 
-        // 升級版：支援非常規與九和弦偵測
         function detectChord(activeKeysSet, useFlats) {
             if (activeKeysSet.size < 3) return null;
             const pitches = Array.from(activeKeysSet).map(n => n % 12);
             const uniquePitches = [...new Set(pitches)].sort((a, b) => a - b);
 
             const chordDict = [
-                { name: "Major (大三)", intervals: [0, 4, 7] }, { name: "Minor (小三)", intervals: [0, 3, 7] },
-                { name: "Diminished (減三)", intervals: [0, 3, 6] }, { name: "Augmented (增三)", intervals: [0, 4, 8] },
-                { name: "Sus4 (掛四)", intervals: [0, 5, 7] }, { name: "Sus2 (掛二)", intervals: [0, 2, 7] },
-                { name: "Maj7 (大七)", intervals: [0, 4, 7, 11] }, { name: "Dom7 (屬七)", intervals: [0, 4, 7, 10] },
-                { name: "Min7 (小七)", intervals: [0, 3, 7, 10] }, { name: "Min7b5 (半減七)", intervals: [0, 3, 6, 10] },
-                { name: "Dim7 (減七)", intervals: [0, 3, 6, 9] }, { name: "Maj6 (大六)", intervals: [0, 4, 7, 9] },
-                { name: "Min6 (小六)", intervals: [0, 3, 7, 9] },
-                // 9度和弦 (第9音在 pitch class 中為 2)
-                { name: "Maj9 (大九)", intervals: [0, 2, 4, 7, 11] }, { name: "Dom9 (屬九)", intervals: [0, 2, 4, 7, 10] },
-                { name: "Min9 (小九)", intervals: [0, 2, 3, 7, 10] }, { name: "Add9 (加九)", intervals: [0, 2, 4, 7] },
-                { name: "mAdd9 (小加九)", intervals: [0, 2, 3, 7] }, { name: "6/9 (六九)", intervals: [0, 2, 4, 7, 9] }
+                { name: "Major", intervals: [0, 4, 7] }, { name: "Minor", intervals: [0, 3, 7] },
+                { name: "Diminished", intervals: [0, 3, 6] }, { name: "Augmented", intervals: [0, 4, 8] },
+                { name: "Sus4", intervals: [0, 5, 7] }, { name: "Sus2", intervals: [0, 2, 7] },
+                { name: "Maj7", intervals: [0, 4, 7, 11] }, { name: "Dom7", intervals: [0, 4, 7, 10] },
+                { name: "Min7", intervals: [0, 3, 7, 10] }, { name: "Min7b5", intervals: [0, 3, 6, 10] },
+                { name: "Dim7", intervals: [0, 3, 6, 9] }, { name: "Maj6", intervals: [0, 4, 7, 9] },
+                { name: "Min6", intervals: [0, 3, 7, 9] },
+                { name: "Maj9", intervals: [0, 2, 4, 7, 11] }, { name: "Dom9", intervals: [0, 2, 4, 7, 10] },
+                { name: "Min9", intervals: [0, 2, 3, 7, 10] }, { name: "Add9", intervals: [0, 2, 4, 7] },
+                { name: "mAdd9", intervals: [0, 2, 3, 7] }, { name: "6/9", intervals: [0, 2, 4, 7, 9] }
             ];
 
             for (let i = 0; i < uniquePitches.length; i++) {
@@ -506,7 +578,6 @@
                 if (targetRootVal !== 'random') rootNote = parseInt(targetRootVal); else { rootNote = treblePool.filter(n => n >= 60 && n <= 65)[Math.floor(Math.random() * treblePool.filter(n => n >= 60 && n <= 65).length)]; currentUseFlats = flatRoots.includes(rootNote % 12); }
                 const baseNote = (rootNote % 12) + 60;
                 
-                // 琶音是否為黑鍵起手判定 (大拇指避開黑鍵)
                 const isBlackStart = [1, 3, 6, 8, 10].includes(rootNote % 12);
                 const majorFingerings = { 60: "1-2-3-1-2-3-4-5", 61: "2-3-1-2-3-4-1-2", 62: "1-2-3-1-2-3-4-5", 63: "3-1-2-3-4-1-2-3", 64: "1-2-3-1-2-3-4-5", 65: "1-2-3-4-1-2-3-4", 66: "2-3-4-1-2-3-1-2", 67: "1-2-3-1-2-3-4-5", 68: "3-4-1-2-3-1-2-3", 69: "1-2-3-1-2-3-4-5", 70: "4-1-2-3-1-2-3-4", 71: "1-2-3-1-2-3-4-5" };
                 const minorFingerings = { 60: "1-2-3-1-2-3-4-5", 61: "3-4-1-2-3-1-2-3", 62: "1-2-3-1-2-3-4-5", 63: "3-1-2-3-4-1-2-3", 64: "1-2-3-1-2-3-4-5", 65: "1-2-3-4-1-2-3-4", 66: "3-4-1-2-3-1-2-3", 67: "1-2-3-1-2-3-4-5", 68: "3-4-1-2-3-1-2-3", 69: "1-2-3-1-2-3-4-5", 70: "2-1-2-3-1-2-3-4", 71: "1-2-3-1-2-3-4-5" };
@@ -516,7 +587,6 @@
                     case 'scale_natural_minor': intervals = [0, 2, 3, 5, 7, 8, 10, 12]; title = "自然小調音階"; fingering = `右手: ${minorFingerings[baseNote]}`; break;
                     case 'scale_harmonic_minor': intervals = [0, 2, 3, 5, 7, 8, 11, 12]; title = "和聲小調音階"; fingering = `右手: ${minorFingerings[baseNote]} (注意增二度)`; break;
                     case 'scale_penta_major': intervals = [0, 2, 4, 7, 9, 12]; title = "大調五聲音階"; fingering = "右手: 1-2-3-1-2-3"; break;
-                    // 新增：琶音區塊
                     case 'arp_major': intervals = [0, 4, 7, 12]; title = "大三和弦琶音"; fingering = isBlackStart ? "右手建議: 2-1-2-4 (拇指穿梭彈白鍵)" : "右手建議: 1-2-3-5 (跨度大可換 1-2-4-5)"; break;
                     case 'arp_minor': intervals = [0, 3, 7, 12]; title = "小三和弦琶音"; fingering = isBlackStart ? "右手建議: 2-1-2-4 (拇指穿梭彈白鍵)" : "右手建議: 1-2-3-5"; break;
                     case 'arp_maj7': intervals = [0, 4, 7, 11, 12]; title = "大七和弦琶音"; fingering = isBlackStart ? "右手建議: 2-1-2-3-4" : "右手建議: 1-2-3-4-5"; break;
@@ -525,7 +595,7 @@
                 
                 currentTargetNotes = intervals.map(i => rootNote + i);
                 drawMelodyOnStave('vexflow-canvas', currentTargetNotes, currentClef, currentUseFlats);
-                document.getElementById('hint-box').innerHTML = `💡 <b>${getNoteName(rootNote, currentUseFlats)} ${title}</b><br>📝 請依序「單音」彈奏畫面上的音符。<br>建議運指：${fingering}`;
+                document.getElementById('hint-box').innerHTML = `💡 <b>${getNoteName(rootNote, currentUseFlats)} ${title}</b><br>📝 請依序「單音」彈奏畫面上的音符。<br><span style="color:#8fc5a3;">${fingering}</span>`;
                 document.getElementById('hint-box').style.display = 'block';
             }
             // 3. 級數推算模式
@@ -538,7 +608,7 @@
                 currentTargetNotes = targetDegree.ints.map(int => chordRoot + int);
                 
                 if (isPreview) drawNotesOnStave('vexflow-canvas', currentTargetNotes, currentClef, currentUseFlats); else drawEmptyStave('vexflow-canvas', currentClef, 200); 
-                document.getElementById('hint-box').innerHTML = `<div style="font-size: 20px; margin-bottom: 10px;">請推算並彈奏：</div><div style="font-size: 28px; color: #e91e63;">${targetKey.name} 的 ${targetDegree.roman} 級和弦</div><div style="font-size: 14px; margin-top: 10px; color: #666;">(提示：${targetKey.name} 的 ${targetDegree.roman} 級是 ${getNoteName(chordRoot, currentUseFlats)}${targetDegree.qual==='Minor'?'m':''})</div>`;
+                document.getElementById('hint-box').innerHTML = `<div style="font-size: 16px; margin-bottom: 5px;">請推算並彈奏：</div><div style="font-size: 24px; color: #c49987;">${targetKey.name} 的 ${targetDegree.roman} 級和弦</div><div style="font-size: 13px; margin-top: 8px; color: #85968b;">(提示：${targetKey.name} 的 ${targetDegree.roman} 級是 ${getNoteName(chordRoot, currentUseFlats)}${targetDegree.qual==='Minor'?'m':''})</div>`;
                 document.getElementById('hint-box').style.display = 'block';
             }
             // 4. 一般和弦模式
