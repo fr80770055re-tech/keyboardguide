@@ -475,7 +475,7 @@
             // --- 2. 音階與琶音模式 ---
             else if (type.startsWith('scale_') || type.startsWith('arp_')) {
                 let rootNote;
-                if (targetRootVal !== 'random') rootNote = parseInt(targetRootVal); else { rootNote = treblePool.filter(n => n >= 60 && n <= 65)[Math.floor(Math.random() * treblePool.filter(n => n >= 60 && n <= 65).length)]; currentUseFlats = flatRoots.includes(rootNote % 12); }
+                if (targetRootVal !== 'random') rootNote = parseInt(targetRootVal); else { rootNote = treblePool.filter(n => n >= 60 && n <= 71)[Math.floor(Math.random() * treblePool.filter(n => n >= 60 && n <= 71).length)]; currentUseFlats = flatRoots.includes(rootNote % 12); }
                 const baseNote = (rootNote % 12) + 60;
                 
                 const isBlackStart = [1, 3, 6, 8, 10].includes(rootNote % 12);
