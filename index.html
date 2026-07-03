@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>音樂學習整合平台 - 實戰指法與七和弦版</title>
+    <title>音樂學習整合平台 - 完美實戰版</title>
     <!-- 像素風簡約鋼琴 Icon -->
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='4' fill='%238fc5a3'/%3E%3Crect x='2' y='4' width='12' height='8' fill='%23ffffff'/%3E%3Crect x='4' y='4' width='2' height='5' fill='%233e4d45'/%3E%3Crect x='7' y='4' width='2' height='5' fill='%233e4d45'/%3E%3Crect x='10' y='4' width='2' height='5' fill='%233e4d45'/%3E%3Crect x='5' y='4' width='1' height='8' fill='%23cccccc'/%3E%3Crect x='8' y='4' width='1' height='8' fill='%23cccccc'/%3E%3Crect x='11' y='4' width='1' height='8' fill='%23cccccc'/%3E%3C/svg%3E">
     <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.2/build/cjs/vexflow.js"></script>
@@ -10,12 +10,14 @@
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background: linear-gradient(135deg, #fdfbf7 0%, #e8f0eb 100%); min-height: 100vh; color: #4a5550; margin: 0; }
         .card { background: rgba(255, 255, 255, 0.45); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); padding: 25px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.7); box-shadow: 0 10px 40px rgba(130, 150, 140, 0.1); margin-bottom: 25px; }
+        
         .top-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; margin-bottom: 20px; flex-wrap: wrap;}
         .global-controls { flex: 1; display: flex; flex-direction: column; gap: 10px; min-width: 300px;}
         .status-row { display: flex; gap: 15px; align-items: center; flex-wrap: wrap;}
         #status { padding: 10px 15px; border-radius: 12px; font-weight: bold; font-size: 14px; background: rgba(255, 255, 255, 0.5); border: 1px solid rgba(255,255,255,0.8); flex-grow: 1; text-align: center; }
         .connected { color: #5a8a6f !important; }
         .error { color: #b87a7a !important; }
+        
         button { padding: 10px 20px; font-size: 15px; font-weight: bold; cursor: pointer; border: 1px solid rgba(255,255,255,0.6); border-radius: 12px; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); backdrop-filter: blur(4px); color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.1); }
         button:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.08); }
         button:active { transform: translateY(0); }
@@ -31,21 +33,26 @@
         .metro-active { background-color: #c49987 !important; }
         .prog-btn { background-color: #aab5a6; color: white; border-radius: 20px;}
         .prog-btn:hover { background-color: #93a18e; }
+        
         .vol-control, .metronome-ui, .practice-ui, .dict-controls, .formula-box, .stats-dashboard { background: rgba(255, 255, 255, 0.5); backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.8); border-radius: 16px; padding: 15px 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.02); }
-        .vol-control { padding: 8px 15px; border-radius: 20px; gap: 10px;}
+        .vol-control { padding: 8px 15px; border-radius: 20px; gap: 10px; font-weight: bold; font-size: 14px; color: #495057; display: flex; align-items: center;}
         .vol-control input[type=range], #bpm-slider { accent-color: #8fc5a3; cursor: pointer; }
-        .metronome-ui { margin-bottom: 20px; gap: 15px;}
-        .practice-ui { margin-bottom: 20px; align-items: stretch; flex-direction: column; gap: 15px;}
+        
+        .metronome-ui { margin-bottom: 20px; display: flex; align-items: center; flex-wrap: wrap; gap: 15px;}
+        .practice-ui { margin-bottom: 20px; display: flex; flex-direction: column; gap: 15px;}
         .practice-top-row { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 15px;}
         .settings-group { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; font-weight: bold; color: #62756a; font-size: 15px;}
+        
         select { padding: 8px 12px; font-size: 15px; border-radius: 8px; border: 1px solid #d1d8d3; background: rgba(255,255,255,0.8); color: #4a5550; outline: none; transition: 0.2s;}
         select:focus { border-color: #8fc5a3; box-shadow: 0 0 0 3px rgba(143, 197, 163, 0.2); }
+        
         .stats-dashboard { flex: 1; min-width: 300px; display: flex; justify-content: space-around; align-items: center; background: linear-gradient(120deg, rgba(255,255,255,0.7), rgba(240,248,242,0.5));}
         .stat-item { text-align: center; }
         .stat-value { font-size: 28px; font-weight: 900; color: #5a8a6f; display: block; font-family: 'Courier New', Courier, monospace;}
         .stat-label { font-size: 12px; color: #85968b; font-weight: bold; letter-spacing: 1px;}
         #reset-stats-btn { background: transparent; color: #b87a7a; border: 1px solid rgba(184, 122, 122, 0.4); padding: 4px 10px; font-size: 12px; text-shadow: none;}
         #reset-stats-btn:hover { background: rgba(184, 122, 122, 0.1); }
+        
         .tabs-nav { display: flex; gap: 8px; margin-bottom: 25px; border-bottom: 2px solid rgba(143, 197, 163, 0.3); padding-bottom: 0;}
         .tab-btn { background: transparent; color: #85968b; border: none; border-bottom: 3px solid transparent; border-radius: 0; padding: 12px 24px; font-size: 16px; transition: all 0.3s ease; text-shadow: none; box-shadow: none; }
         .tab-btn:hover { color: #5a8a6f; transform: none; background: rgba(255,255,255,0.3);}
@@ -60,6 +67,7 @@
         .feedback-msg { font-size: 18px; font-weight: bold; text-align: center; margin-top: 15px; min-height: 30px; letter-spacing: 0.5px;}
         .msg-waiting { color: #85968b; } .msg-correct { color: #6a9c80; } .msg-error { color: #c48b8b; } .msg-preview { color: #769fb6; }
         .chord-detected { color: #8a7b9c; font-weight: 900; font-size: 22px; }
+        
         .formula-box h4 { margin: 0 0 15px 0; color: #62756a; }
         .formula-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; font-size: 14px; color: #77887e;}
         .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; margin-bottom: 25px;}
@@ -70,15 +78,28 @@
         .degree-card h4 { margin: 0; color: #5a7566; font-size: 18px; }
         .degree-card p { margin: 6px 0 0 0; color: #a1b0a7; font-size: 12px; font-weight: bold;}
         .relative-key-badge { background: rgba(255,255,255,0.7); color: #77887e; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; margin-left: 10px; border: 1px solid #d1d8d3;}
+        
         #active-keys-display { font-weight:bold; color:#a68a9c; margin-top:10px; font-size: 14px;}
         #log { height: 80px; overflow-y: auto; background: rgba(50, 56, 52, 0.8); color: #a8d5ba; padding: 12px; font-family: monospace; border-radius: 12px; font-size: 13px; backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.1);}
 
-        /* 虛擬鍵盤 */
-        #virtual-keyboard { position: relative; display: flex; width: 100%; max-width: 700px; height: 110px; margin: 0 auto 20px; border: 1px solid rgba(130, 150, 140, 0.3); border-radius: 6px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); user-select: none; -webkit-user-select: none; }
+        /* --- 虛擬鍵盤專屬樣式 --- */
+        #virtual-keyboard {
+            position: relative; display: flex; width: 100%; max-width: 700px; height: 110px; margin: 0 auto 20px;
+            border: 1px solid rgba(130, 150, 140, 0.3); border-radius: 6px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            user-select: none; -webkit-user-select: none;
+        }
         .v-key { cursor: pointer; box-sizing: border-box; transition: background 0.1s ease, transform 0.1s; }
-        .v-white { background: rgba(255, 255, 255, 0.85); border-right: 1px solid rgba(130, 150, 140, 0.3); border-bottom: 1px solid rgba(130, 150, 140, 0.3); height: 100%; z-index: 1; border-radius: 0 0 4px 4px; box-shadow: inset 0 -3px 5px rgba(0,0,0,0.02); }
+        .v-white {
+            background: rgba(255, 255, 255, 0.85); border-right: 1px solid rgba(130, 150, 140, 0.3);
+            border-bottom: 1px solid rgba(130, 150, 140, 0.3); height: 100%; z-index: 1;
+            border-radius: 0 0 4px 4px; box-shadow: inset 0 -3px 5px rgba(0,0,0,0.02);
+        }
         .v-white:last-child { border-right: none; }
-        .v-black { position: absolute; background: linear-gradient(180deg, #5c6b63 0%, #3e4d45 100%); height: 60%; z-index: 2; border-radius: 0 0 4px 4px; box-shadow: 2px 2px 5px rgba(0,0,0,0.2), inset 0px -2px 3px rgba(255,255,255,0.1); border: 1px solid #334039; }
+        .v-black {
+            position: absolute; background: linear-gradient(180deg, #5c6b63 0%, #3e4d45 100%);
+            height: 60%; z-index: 2; border-radius: 0 0 4px 4px;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.2), inset 0px -2px 3px rgba(255,255,255,0.1); border: 1px solid #334039;
+        }
         .v-white.active { background: #a6cbb5; transform: translateY(1px); box-shadow: inset 0 2px 5px rgba(0,0,0,0.1); }
         .v-black.active { background: #83ab93; box-shadow: inset 0 2px 5px rgba(0,0,0,0.3); }
         .v-white.highlight { background: #e0d0c1; box-shadow: inset 0 0 12px rgba(196, 153, 135, 0.4); border-bottom-color: #c49987;}
@@ -96,8 +117,11 @@
             <div class="global-controls">
                 <div class="status-row">
                     <button id="audio-btn">🔊 1. 解鎖音源</button>
-                    <!-- 鋼琴獨立音量 -->
-                    <div class="vol-control"><label>🎹 鋼琴音量:</label><input type="range" id="piano-vol-slider" min="0" max="100" value="60"></div>
+                    <!-- 修正：鋼琴獨立音量的 ID -->
+                    <div class="vol-control">
+                        <label>🎹 鋼琴音量:</label>
+                        <input type="range" id="piano-vol-slider" min="0" max="100" value="60">
+                    </div>
                     <div id="status">檢查 MIDI 支援與裝置中...</div>
                 </div>
             </div>
@@ -180,8 +204,10 @@
                             <option value="single_bass">單音判讀 (低音譜號 / 左手)</option>
                         </select>
                         <label style="font-size: 13px; font-weight: normal;"><input type="checkbox" id="include-black-keys" checked> 隨機包含黑鍵</label>
-                        <!-- 新增：切換顯示虛擬鍵盤 -->
-                        <label style="font-size: 13px; font-weight: normal; color: #a68a9c;"><input type="checkbox" id="toggle-kb-hint" checked> 顯示虛擬鍵盤與按鍵提示</label>
+                        <!-- 開關：切換顯示虛擬鍵盤與按鍵提示 -->
+                        <label style="font-size: 13px; font-weight: bold; color: #a68a9c; cursor: pointer;">
+                            <input type="checkbox" id="toggle-kb-hint" checked> 顯示虛擬鍵盤與提示
+                        </label>
                     </div>
                 </div>
                 
@@ -202,6 +228,7 @@
             </div>
         </div>
 
+        <!-- 【頁籤 B】 樂理記號 -->
         <div id="tab-symbols" class="tab-content">
             <div class="card-grid">
                 <div class="dict-card" onclick="playDictSound('1n')"><h4>全音符 (w)</h4><p>4 拍</p></div>
@@ -211,6 +238,7 @@
             </div>
         </div>
 
+        <!-- 【頁籤 C】 和弦推算與級數字典 -->
         <div id="tab-chords" class="tab-content">
             <div class="formula-box">
                 <h4>📐 常用和弦推算公式 (以音階度數表示)</h4>
@@ -239,7 +267,7 @@
                         <option value="major">大調 (Major)</option>
                         <option value="minor">自然小調 (Minor)</option>
                     </select>
-                    <!-- 新增：複雜度選擇 (三和弦 / 七和弦) -->
+                    <!-- 複雜度選擇 (三和弦 / 七和弦) -->
                     <select id="chord-complexity-selector" style="background-color: #e8f0eb;">
                         <option value="triad">三和弦 (Triads)</option>
                         <option value="seventh">七和弦 (7th Chords)</option>
@@ -271,6 +299,7 @@
     </div>
 
     <script>
+        // --- 1. PWA 與 本機儲存 ---
         if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').catch(err => console.log('ServiceWorker Error:', err)); }); }
 
         let userStats = JSON.parse(localStorage.getItem('musicAppStats')) || { totalCorrect: 0, highestStreak: 0 };
@@ -282,6 +311,7 @@
         document.getElementById('reset-stats-btn').addEventListener('click', () => { if(confirm('確定要清除所有歷史紀錄嗎？')) { userStats = { totalCorrect: 0, highestStreak: 0 }; localStorage.setItem('musicAppStats', JSON.stringify(userStats)); updateStatsUI(); } });
         updateStatsUI();
 
+        // --- 2. 頁籤切換 ---
         const tabBtns = document.querySelectorAll('.tab-btn'); const tabContents = document.querySelectorAll('.tab-content');
         tabBtns.forEach(btn => {
             btn.addEventListener('click', () => {
@@ -290,7 +320,7 @@
             });
         });
 
-        // 獨立音量節點設定
+        // --- 3. Tone.js 雙音量系統 ---
         const VF = Vex.Flow;
         const pianoVolNode = new Tone.Volume(0).toDestination();
         const synth = new Tone.PolySynth(Tone.Synth, { oscillator: { type: "triangle" }, envelope: { attack: 0.02, decay: 0.1, sustain: 0.4, release: 1.5 } }).connect(pianoVolNode);
@@ -302,10 +332,11 @@
         pianoVolNode.volume.value = 20 * Math.log10(60 / 100); 
         metroVolNode.volume.value = 20 * Math.log10(60 / 100);
 
-        document.getElementById('master-vol-slider').addEventListener('input', (e) => { const val = parseInt(e.target.value); if (val === 0) pianoVolNode.mute = true; else { pianoVolNode.mute = false; pianoVolNode.volume.value = 20 * Math.log10(val / 100); } });
+        // ✅ 修復：正確對應鋼琴音量的 ID
+        document.getElementById('piano-vol-slider').addEventListener('input', (e) => { const val = parseInt(e.target.value); if (val === 0) pianoVolNode.mute = true; else { pianoVolNode.mute = false; pianoVolNode.volume.value = 20 * Math.log10(val / 100); } });
         document.getElementById('metro-vol-slider').addEventListener('input', (e) => { const val = parseInt(e.target.value); if (val === 0) metroVolNode.mute = true; else { metroVolNode.mute = false; metroVolNode.volume.value = 20 * Math.log10(val / 100); } });
 
-        // UI 隱藏功能
+        // --- UI 開關：隱藏鍵盤與提示 ---
         document.getElementById('toggle-kb-hint').addEventListener('change', (e) => {
             document.getElementById('virtual-keyboard').style.display = e.target.checked ? 'flex' : 'none';
             document.getElementById('active-keys-display').style.display = e.target.checked ? 'block' : 'none';
@@ -319,9 +350,10 @@
 
         function playDictSound(duration) { if (isAudioUnlocked) synth.triggerAttackRelease("C4", duration, Tone.now()); }
 
-        // --- 虛擬鍵盤 ---
+        // --- 4. 虛擬鍵盤 (Virtual Keyboard) ---
         const activeKeys = new Set();
         function simulateMIDI(type, note, velocity) { onMIDIMessage({ data: [type, note, velocity] }); }
+        
         function initVirtualKeyboard() {
             const kb = document.getElementById('virtual-keyboard'); kb.innerHTML = '';
             const startMidi = 48; const endMidi = 83; const whiteKeyCount = 21; const whiteWidth = 100 / whiteKeyCount;
@@ -339,10 +371,11 @@
             }
         }
         initVirtualKeyboard();
+        
         function updateKeyboardActiveState() { document.querySelectorAll('.v-key').forEach(k => { if (activeKeys.has(parseInt(k.dataset.note))) { k.classList.add('active'); } else { k.classList.remove('active'); } }); }
         function highlightNotes(noteArray) { document.querySelectorAll('.v-key').forEach(k => k.classList.remove('highlight')); if (!noteArray) return; noteArray.forEach(note => { const key = document.querySelector(`.v-key[data-note="${note}"]`); if (key) key.classList.add('highlight'); }); }
 
-        // --- VexFlow 繪圖 ---
+        // --- 5. VexFlow 繪圖 ---
         function drawEmptyStave(divId, clef, customWidth = 200) {
             const div = document.getElementById(divId); div.innerHTML = ""; const renderer = new VF.Renderer(div, VF.Renderer.Backends.SVG); renderer.resize(customWidth + 60, 150);
             const context = renderer.getContext(); const stave = new VF.Stave(30, 20, customWidth).addClef(clef).setContext(context).draw(); return { context, stave };
@@ -379,43 +412,21 @@
 
         const flatRoots = [5, 10, 3, 8, 1, 6]; 
         
-        // 擴充字典：加入七和弦切換
+        // --- 6. 級數推算字典 ---
         const scalesFormula = {
             'major': {
-                'triad': [
-                    { roman: 'I', int: 0, qual: 'Major', ints: [0, 4, 7] }, { roman: 'ii', int: 2, qual: 'Minor', ints: [0, 3, 7] }, 
-                    { roman: 'iii', int: 4, qual: 'Minor', ints: [0, 3, 7] }, { roman: 'IV', int: 5, qual: 'Major', ints: [0, 4, 7] }, 
-                    { roman: 'V', int: 7, qual: 'Major', ints: [0, 4, 7] }, { roman: 'vi', int: 9, qual: 'Minor', ints: [0, 3, 7] }, 
-                    { roman: 'vii°',int: 11, qual: 'Dim', ints: [0, 3, 6] }
-                ],
-                'seventh': [
-                    { roman: 'Imaj7', int: 0, qual: 'Maj7', ints: [0, 4, 7, 11] }, { roman: 'iim7', int: 2, qual: 'Min7', ints: [0, 3, 7, 10] }, 
-                    { roman: 'iiim7', int: 4, qual: 'Min7', ints: [0, 3, 7, 10] }, { roman: 'IVmaj7', int: 5, qual: 'Maj7', ints: [0, 4, 7, 11] }, 
-                    { roman: 'V7', int: 7, qual: 'Dom7', ints: [0, 4, 7, 10] }, { roman: 'vim7', int: 9, qual: 'Min7', ints: [0, 3, 7, 10] }, 
-                    { roman: 'viim7b5',int: 11, qual: 'Min7b5', ints: [0, 3, 6, 10] }
-                ]
+                'triad': [ { roman: 'I', int: 0, qual: 'Major', ints: [0, 4, 7] }, { roman: 'ii', int: 2, qual: 'Minor', ints: [0, 3, 7] }, { roman: 'iii', int: 4, qual: 'Minor', ints: [0, 3, 7] }, { roman: 'IV', int: 5, qual: 'Major', ints: [0, 4, 7] }, { roman: 'V', int: 7, qual: 'Major', ints: [0, 4, 7] }, { roman: 'vi', int: 9, qual: 'Minor', ints: [0, 3, 7] }, { roman: 'vii°',int: 11, qual: 'Dim', ints: [0, 3, 6] } ],
+                'seventh': [ { roman: 'Imaj7', int: 0, qual: 'Maj7', ints: [0, 4, 7, 11] }, { roman: 'iim7', int: 2, qual: 'Min7', ints: [0, 3, 7, 10] }, { roman: 'iiim7', int: 4, qual: 'Min7', ints: [0, 3, 7, 10] }, { roman: 'IVmaj7', int: 5, qual: 'Maj7', ints: [0, 4, 7, 11] }, { roman: 'V7', int: 7, qual: 'Dom7', ints: [0, 4, 7, 10] }, { roman: 'vim7', int: 9, qual: 'Min7', ints: [0, 3, 7, 10] }, { roman: 'viim7b5',int: 11, qual: 'Min7b5', ints: [0, 3, 6, 10] } ]
             },
             'minor': {
-                'triad': [
-                    { roman: 'i', int: 0, qual: 'Minor', ints: [0, 3, 7] }, { roman: 'ii°', int: 2, qual: 'Dim', ints: [0, 3, 6] }, 
-                    { roman: 'III', int: 3, qual: 'Major', ints: [0, 4, 7] }, { roman: 'iv', int: 5, qual: 'Minor', ints: [0, 3, 7] }, 
-                    { roman: 'v', int: 7, qual: 'Minor', ints: [0, 3, 7] }, { roman: 'VI', int: 8, qual: 'Major', ints: [0, 4, 7] }, 
-                    { roman: 'VII', int: 10, qual: 'Major', ints: [0, 4, 7] }
-                ],
-                'seventh': [
-                    { roman: 'im7', int: 0, qual: 'Min7', ints: [0, 3, 7, 10] }, { roman: 'iim7b5', int: 2, qual: 'Min7b5', ints: [0, 3, 6, 10] }, 
-                    { roman: 'IIImaj7', int: 3, qual: 'Maj7', ints: [0, 4, 7, 11] }, { roman: 'ivm7', int: 5, qual: 'Min7', ints: [0, 3, 7, 10] }, 
-                    { roman: 'vm7', int: 7, qual: 'Min7', ints: [0, 3, 7, 10] }, { roman: 'VImaj7', int: 8, qual: 'Maj7', ints: [0, 4, 7, 11] }, 
-                    { roman: 'VII7', int: 10, qual: 'Dom7', ints: [0, 4, 7, 10] }
-                ]
+                'triad': [ { roman: 'i', int: 0, qual: 'Minor', ints: [0, 3, 7] }, { roman: 'ii°', int: 2, qual: 'Dim', ints: [0, 3, 6] }, { roman: 'III', int: 3, qual: 'Major', ints: [0, 4, 7] }, { roman: 'iv', int: 5, qual: 'Minor', ints: [0, 3, 7] }, { roman: 'v', int: 7, qual: 'Minor', ints: [0, 3, 7] }, { roman: 'VI', int: 8, qual: 'Major', ints: [0, 4, 7] }, { roman: 'VII', int: 10, qual: 'Major', ints: [0, 4, 7] } ],
+                'seventh': [ { roman: 'im7', int: 0, qual: 'Min7', ints: [0, 3, 7, 10] }, { roman: 'iim7b5', int: 2, qual: 'Min7b5', ints: [0, 3, 6, 10] }, { roman: 'IIImaj7', int: 3, qual: 'Maj7', ints: [0, 4, 7, 11] }, { roman: 'ivm7', int: 5, qual: 'Min7', ints: [0, 3, 7, 10] }, { roman: 'vm7', int: 7, qual: 'Min7', ints: [0, 3, 7, 10] }, { roman: 'VImaj7', int: 8, qual: 'Maj7', ints: [0, 4, 7, 11] }, { roman: 'VII7', int: 10, qual: 'Dom7', ints: [0, 4, 7, 10] } ]
             }
         };
         
         let currentDiatonicChords = [];
         function updateDictionary() {
-            const rootMidi = parseInt(document.getElementById('key-root-selector').value); 
-            const mode = document.getElementById('key-mode-selector').value; 
-            const complexity = document.getElementById('chord-complexity-selector').value;
+            const rootMidi = parseInt(document.getElementById('key-root-selector').value); const mode = document.getElementById('key-mode-selector').value; const complexity = document.getElementById('chord-complexity-selector').value;
             const useFlats = flatRoots.includes(rootMidi % 12); const relativeDisplay = document.getElementById('relative-key-display');
             
             if (mode === 'major') { relativeDisplay.textContent = `關係小調：${getNoteName(rootMidi - 3, useFlats)}m`; document.querySelectorAll('.major-prog').forEach(e => e.style.display = 'inline-block'); document.querySelectorAll('.minor-prog').forEach(e => e.style.display = 'none'); } 
@@ -450,6 +461,7 @@
         }
         document.getElementById('prog-1645-btn').onclick = () => playProgression([1, 6, 4, 5]); document.getElementById('prog-4536-btn').onclick = () => playProgression([4, 5, 3, 6]); document.getElementById('prog-251-btn').onclick = () => playProgression([2, 5, 1]); document.getElementById('prog-minor-btn').onclick = () => playProgression([4, 5, 1]);
 
+        // --- 7. 節拍器 ---
         let timeSignature = 4; let currentBeat = 0; let isMetroPlaying = false;
         Tone.Transport.scheduleRepeat((time) => {
             Tone.Draw.schedule(() => { document.getElementById('beat-indicator').style.backgroundColor = (currentBeat % timeSignature === 0) ? '#e9aaab' : '#a8d5ba'; setTimeout(() => { document.getElementById('beat-indicator').style.backgroundColor = 'rgba(0,0,0,0.1)'; }, 100); }, time);
@@ -462,6 +474,7 @@
         document.getElementById('bpm-slider').oninput = (e) => { bpm = e.target.value; document.getElementById('bpm-display').textContent = bpm; Tone.Transport.bpm.value = bpm; };
         document.getElementById('time-sig-select').onchange = (e) => { timeSignature = parseInt(e.target.value); currentBeat = 0; };
 
+        // --- 8. 測驗核心與和弦偵測 ---
         let isPracticeMode = false; let isPreviewMode = false; let isSequentialMode = false; let isEarTrainingMode = false; 
         let currentTargetNotes = []; let currentClef = 'treble'; let currentUseFlats = false; let sequenceProgress = 0; let streak = 0;
         
@@ -515,6 +528,7 @@
             let intervals = []; let title = ""; let fingering = "";
             if (targetRootVal !== 'random') { currentUseFlats = flatRoots.includes(parseInt(targetRootVal) % 12); } else { currentUseFlats = Math.random() > 0.5; }
 
+            // 1. 音程特訓
             if (type.startsWith('interval_')) {
                 let pool = treblePool; let rootNote;
                 if (targetRootVal !== 'random') rootNote = parseInt(targetRootVal); else rootNote = pool.filter(n => n <= 64)[Math.floor(Math.random() * pool.filter(n => n <= 64).length)];
@@ -533,6 +547,7 @@
                     else { drawEmptyStave('vexflow-canvas', currentClef, 200); setTimeout(() => { if (type === 'interval_ear_melodic') { synth.triggerAttackRelease(Tone.Midi(currentTargetNotes[0]).toNote(), "4n", Tone.now()); synth.triggerAttackRelease(Tone.Midi(currentTargetNotes[1]).toNote(), "4n", Tone.now() + 0.5); } else { synth.triggerAttackRelease(currentTargetNotes.map(n => Tone.Midi(n).toNote()), "2n", Tone.now()); } }, 300); }
                 }
             }
+            // 2. 聽音模式
             else if (isEarTrainingMode) {
                 let pool = treblePool; let rootNote;
                 if (targetRootVal !== 'random') rootNote = parseInt(targetRootVal); else rootNote = pool.filter(n => n <= 67)[Math.floor(Math.random() * pool.filter(n => n <= 67).length)];
@@ -540,12 +555,14 @@
                 document.getElementById('hint-box').innerHTML = `💡 <b>${title}</b><br>請仔細聽聲音，並在鍵盤上彈出對應的音符。`; document.getElementById('hint-box').style.display = 'block';
                 if (isPreview) drawNotesOnStave('vexflow-canvas', currentTargetNotes, currentClef, currentUseFlats); else { drawEmptyStave('vexflow-canvas', currentClef, 200); setTimeout(() => synth.triggerAttackRelease(currentTargetNotes.map(n => Tone.Midi(n).toNote()), "2n", Tone.now()), 300); }
             }
+            // 3. 單音模式
             else if (type.startsWith('single_')) {
                 let pool = treblePool; currentClef = 'treble';
                 if (type === 'single_bass') { pool = bassPool; currentClef = 'bass'; } else if (type === 'single_mixed') { if (Math.random() > 0.5) { pool = bassPool; currentClef = 'bass'; } }
                 if (targetRootVal !== 'random') pool = pool.filter(n => n % 12 === parseInt(targetRootVal) % 12);
                 currentTargetNotes = [pool[Math.floor(Math.random() * pool.length)]]; document.getElementById('hint-box').style.display = 'none'; drawNotesOnStave('vexflow-canvas', currentTargetNotes, currentClef, currentUseFlats);
             }
+            // 4. 音階與琶音模式
             else if (type.startsWith('scale_') || type.startsWith('arp_')) {
                 let rootNote;
                 if (targetRootVal !== 'random') rootNote = parseInt(targetRootVal); else { rootNote = treblePool.filter(n => n >= 60 && n <= 71)[Math.floor(Math.random() * treblePool.filter(n => n >= 60 && n <= 71).length)]; currentUseFlats = flatRoots.includes(rootNote % 12); }
@@ -559,16 +576,15 @@
                     case 'scale_major': intervals = [0, 2, 4, 5, 7, 9, 11, 12]; title = "大調音階"; fingering = `<span class="fingering-r">R: ${majorFingerings[baseNote]}</span><br><span class="fingering-l">L: ${majorFingeringsLH[baseNote]}</span>`; break;
                     case 'scale_natural_minor': intervals = [0, 2, 3, 5, 7, 8, 10, 12]; title = "自然小調音階"; fingering = `<span class="fingering-r">R: ${minorFingerings[baseNote]}</span><br><span class="fingering-l">L: ${minorFingeringsLH[baseNote]}</span>`; break;
                     case 'scale_harmonic_minor': intervals = [0, 2, 3, 5, 7, 8, 11, 12]; title = "和聲小調音階"; fingering = `<span class="fingering-r">R: ${minorFingerings[baseNote]}</span><br><span class="fingering-l">L: ${minorFingeringsLH[baseNote]}</span>`; break;
-                    case 'scale_penta_major': intervals = [0, 2, 4, 7, 9, 12]; title = "大調五聲音階"; fingering = `<span class="fingering-r">R: 1-2-3-1-2-3</span>`; break;
-                    case 'arp_major': intervals = [0, 4, 7, 12]; title = "大三和弦琶音"; fingering = `<span class="fingering-r">R: ${isBlackStart ? '2-1-2-4' : '1-2-3-5'}</span><br><span class="fingering-l">L: ${isBlackStart ? '3-2-1-3 或 2-1-2-4' : '5-3-2-1'}</span>`; break;
-                    case 'arp_minor': intervals = [0, 3, 7, 12]; title = "小三和弦琶音"; fingering = `<span class="fingering-r">R: ${isBlackStart ? '2-1-2-4' : '1-2-3-5'}</span><br><span class="fingering-l">L: ${isBlackStart ? '3-2-1-3 或 2-1-2-4' : '5-3-2-1'}</span>`; break;
+                    case 'arp_major': intervals = [0, 4, 7, 12]; title = "大三和弦琶音"; fingering = `<span class="fingering-r">R: ${isBlackStart ? '2-1-2-4 (穿梭白鍵)' : '1-2-3-5'}</span><br><span class="fingering-l">L: ${isBlackStart ? '3-2-1-3 或 2-1-2-4' : '5-3-2-1'}</span>`; break;
+                    case 'arp_minor': intervals = [0, 3, 7, 12]; title = "小三和弦琶音"; fingering = `<span class="fingering-r">R: ${isBlackStart ? '2-1-2-4 (穿梭白鍵)' : '1-2-3-5'}</span><br><span class="fingering-l">L: ${isBlackStart ? '3-2-1-3 或 2-1-2-4' : '5-3-2-1'}</span>`; break;
                     case 'arp_maj7': intervals = [0, 4, 7, 11, 12]; title = "大七和弦琶音"; fingering = `<span class="fingering-r">R: ${isBlackStart ? '2-1-2-3-4' : '1-2-3-4-5'}</span><br><span class="fingering-l">L: ${isBlackStart ? '4-3-2-1-2' : '5-4-3-2-1'}</span>`; break;
                     case 'arp_dom7': intervals = [0, 4, 7, 10, 12]; title = "屬七和弦琶音"; fingering = `<span class="fingering-r">R: ${isBlackStart ? '2-1-2-3-4' : '1-2-3-4-5'}</span><br><span class="fingering-l">L: ${isBlackStart ? '4-3-2-1-2' : '5-4-3-2-1'}</span>`; break;
                 }
                 currentTargetNotes = intervals.map(i => rootNote + i); drawMelodyOnStave('vexflow-canvas', currentTargetNotes, currentClef, currentUseFlats);
                 document.getElementById('hint-box').innerHTML = `💡 <b>${getNoteName(rootNote, currentUseFlats)} ${title}</b><br>📝 請依序「單音」彈奏畫面上的音符。<br><div class="fingering-text">${fingering}</div>`; document.getElementById('hint-box').style.display = 'block';
             }
-            // 3. 級數推算模式 (支援三/七和弦)
+            // 5. 級數推算模式
             else if (type.startsWith('degree_progression')) {
                 let targetKey;
                 if (targetRootVal !== 'random') { const rootMidi = parseInt(targetRootVal); targetKey = { name: getNoteName(rootMidi, currentUseFlats) + ' 大調', root: rootMidi }; } 
@@ -581,7 +597,7 @@
                 if (isPreview) drawNotesOnStave('vexflow-canvas', currentTargetNotes, currentClef, currentUseFlats); else drawEmptyStave('vexflow-canvas', currentClef, 200); 
                 document.getElementById('hint-box').innerHTML = `<div style="font-size: 16px; margin-bottom: 5px;">請推算並彈奏：</div><div style="font-size: 24px; color: #c49987;">${targetKey.name} 的 ${targetDegree.roman} 級和弦</div><div style="font-size: 13px; margin-top: 8px; color: #85968b;">(提示：${targetKey.name} 的 ${targetDegree.roman} 級是 ${getNoteName(chordRoot, currentUseFlats)}${targetDegree.qual.replace('Major','').replace('Minor','m')})</div>`; document.getElementById('hint-box').style.display = 'block';
             }
-            // 4. 一般和弦模式 (加入指法建議)
+            // 6. 一般和弦模式 (加入指法建議)
             else {
                 let rootNote;
                 if (targetRootVal !== 'random') { rootNote = parseInt(targetRootVal); } 
