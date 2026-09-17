@@ -8,8 +8,15 @@
     <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.2/build/cjs/vexflow.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background: linear-gradient(135deg, #fdfbf7 0%, #e8f0eb 100%); min-height: 100vh; color: #4a5550; margin: 0; }
+        :root { --sage: #8fc5a3; --sage-dark: #5a8a6f; --clay: #c49987; --lavender: #b5adc4; --ink: #4a5550; --ink-soft: #77887e; --ink-faint: #93a49a; }
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang TC', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif; padding: 20px; background: linear-gradient(135deg, #fdfbf7 0%, #e8f0eb 100%); min-height: 100vh; color: #4a5550; margin: 0; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+        @media (max-width: 680px) { body { padding: 12px; } }
+        .app-header { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+        .app-header h1 { font-size: 21px; margin: 0; font-weight: 800; color: var(--ink); letter-spacing: 0.2px; }
+        .app-header .app-subtitle { font-size: 12.5px; color: var(--ink-faint); font-weight: 600; }
         .card { background: rgba(255, 255, 255, 0.45); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); padding: 25px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.7); box-shadow: 0 10px 40px rgba(130, 150, 140, 0.1); margin-bottom: 25px; }
+        @media (max-width: 680px) { .card { padding: 16px; border-radius: 16px; } }
         
         .top-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; margin-bottom: 20px; flex-wrap: wrap;}
         .global-controls { flex: 1; display: flex; flex-direction: column; gap: 10px; min-width: 300px;}
@@ -109,10 +116,39 @@
         .fingering-r { color: #5a8a6f; font-weight: bold; }
         .fingering-l { color: #8a7b9c; font-weight: bold; }
         .voicing-hint { margin-top: 5px; font-size: 13px; color: #b87a7a; background: rgba(184,122,122,0.1); padding: 4px 8px; border-radius: 4px; display: inline-block;}
+
+        /* --- 學習路徑 (Learning Path) --- */
+        .path-resume-banner { display: flex; align-items: center; justify-content: space-between; gap: 15px; flex-wrap: wrap; background: linear-gradient(120deg, rgba(143,197,163,0.25), rgba(196,153,135,0.18)); border: 1px solid rgba(255,255,255,0.8); border-radius: 16px; padding: 14px 20px; margin-bottom: 20px; }
+        .path-resume-text { font-weight: 700; color: #5a7566; font-size: 14.5px; }
+        .path-resume-btn { background-color: var(--sage); padding: 8px 18px; font-size: 14px; }
+        .path-track { display: flex; flex-direction: column; gap: 12px; }
+        .path-node { background: rgba(255, 255, 255, 0.5); border: 1px solid rgba(255, 255, 255, 0.8); border-radius: 16px; padding: 16px 20px; box-shadow: 0 4px 14px rgba(0,0,0,0.03); transition: 0.3s ease; }
+        .path-node.path-locked { opacity: 0.55; filter: grayscale(0.5); }
+        .path-node.path-done { border-color: rgba(143,197,163,0.6); background: rgba(232,242,235,0.6); }
+        .path-node-head { display: flex; align-items: center; gap: 14px; }
+        .path-node-icon { font-size: 24px; width: 40px; text-align: center; flex-shrink: 0; }
+        .path-node-title-wrap { flex: 1; min-width: 0; }
+        .path-node-title-wrap h4 { margin: 0 0 2px 0; font-size: 16px; color: var(--ink); }
+        .path-node-title-wrap p { margin: 0; font-size: 12.5px; color: var(--ink-faint); }
+        .path-node-progress { font-size: 13px; font-weight: 800; color: var(--sage-dark); flex-shrink: 0; white-space: nowrap; }
+        .path-node-bar { height: 6px; background: rgba(0,0,0,0.06); border-radius: 4px; margin: 12px 0; overflow: hidden; }
+        .path-node-bar-fill { height: 100%; background: linear-gradient(90deg, var(--sage), var(--sage-dark)); transition: width 0.4s ease; }
+        .path-items { display: flex; flex-wrap: wrap; gap: 8px; }
+        .path-item { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.7); border: 1px solid rgba(255,255,255,0.9); border-radius: 20px; padding: 6px 12px 6px 8px; font-size: 12.5px; font-weight: 700; color: #62756a; cursor: pointer; transition: 0.2s ease; }
+        .path-item:hover { border-color: var(--sage); transform: translateY(-1px); }
+        .path-item.mastered { background: rgba(143,197,163,0.25); color: #4a7a5f; }
+        .path-item.disabled { cursor: not-allowed; opacity: 0.6; }
+        .path-item-dot { width: 16px; height: 16px; border-radius: 50%; background: rgba(0,0,0,0.08); display: inline-flex; align-items: center; justify-content: center; font-size: 10px; color: var(--sage-dark); flex-shrink: 0; }
+        .path-item.mastered .path-item-dot { background: var(--sage); color: #fff; }
+        .path-item-count { color: #a1b0a7; font-weight: 600; }
     </style>
 </head>
 <body>
     <div class="card">
+        <div class="app-header">
+            <h1>🎹 音樂學習整合平台</h1>
+            <span class="app-subtitle">MIDI 鍵盤・樂理・視奏 練習系統</span>
+        </div>
         <div class="top-header">
             <div class="global-controls">
                 <div class="status-row">
@@ -133,13 +169,23 @@
         </div>
 
         <div class="tabs-nav">
-            <button class="tab-btn active" data-target="tab-practice">🎯 測驗模式</button>
+            <button class="tab-btn active" data-target="tab-path">🗺️ 學習路徑</button>
+            <button class="tab-btn" data-target="tab-practice">🎯 自由練習</button>
             <button class="tab-btn" data-target="tab-symbols">📖 樂理記號</button>
             <button class="tab-btn" data-target="tab-chords">🎹 和弦推算與級數</button>
         </div>
 
-        <!-- 【頁籤 A】 測驗模式 -->
-        <div id="tab-practice" class="tab-content active">
+        <!-- 【頁籤 P】 學習路徑 -->
+        <div id="tab-path" class="tab-content active">
+            <div id="path-resume-banner" class="path-resume-banner" style="display:none;">
+                <span class="path-resume-text"></span>
+                <button class="path-resume-btn">▶️ 繼續練習</button>
+            </div>
+            <div id="path-track" class="path-track"></div>
+        </div>
+
+        <!-- 【頁籤 A】 自由練習 -->
+        <div id="tab-practice" class="tab-content">
             <div class="metronome-ui">
                 <button id="metro-play-btn" disabled>⏱️ 播放節拍器</button>
                 <div class="vol-control" style="background:transparent; border:1px solid rgba(255,255,255,0.5);">
@@ -317,6 +363,7 @@
             btn.addEventListener('click', () => {
                 tabBtns.forEach(b => b.classList.remove('active')); tabContents.forEach(c => c.classList.remove('active'));
                 btn.classList.add('active'); document.getElementById(btn.getAttribute('data-target')).classList.add('active');
+                if (btn.getAttribute('data-target') === 'tab-path') renderPathTrack();
             });
         });
 
@@ -690,7 +737,7 @@
                             if (note === currentTargetNotes[sequenceProgress]) {
                                 sequenceProgress++; document.getElementById('feedback-msg').textContent = `✅ 彈奏正確 (${sequenceProgress}/${currentTargetNotes.length})...`; document.getElementById('feedback-msg').className = "msg-correct";
                                 if (sequenceProgress === currentTargetNotes.length) {
-                                    streak++; document.getElementById('streak-display').textContent = streak; saveStats(streak); 
+                                    streak++; document.getElementById('streak-display').textContent = streak; saveStats(streak); recordPathProgress(document.getElementById('practice-type').value);
                                     document.getElementById('feedback-msg').textContent = "✨ 彈奏完美！準備下一題..."; currentTargetNotes = []; setTimeout(() => generateQuestion(false), 1500);
                                 }
                             } else { sequenceProgress = 0; streak = 0; document.getElementById('streak-display').textContent = streak; document.getElementById('feedback-msg').textContent = "❌ 彈錯了！請從第一個音重新開始。"; document.getElementById('feedback-msg').className = "msg-error"; }
@@ -698,7 +745,7 @@
                             const targetNoteNames = currentTargetNotes.map(n => n % 12).sort(); const activeNoteNames = Array.from(activeKeys).map(n => n % 12).sort();
                             const isMatch = targetNoteNames.every((val, index) => val === activeNoteNames[index]);
                             if (isMatch) {
-                                streak++; document.getElementById('streak-display').textContent = streak; saveStats(streak); 
+                                streak++; document.getElementById('streak-display').textContent = streak; saveStats(streak); recordPathProgress(document.getElementById('practice-type').value);
                                 document.getElementById('feedback-msg').textContent = "✨ 判定正確！"; document.getElementById('feedback-msg').className = "msg-correct";
                                 if (document.getElementById('practice-type').value.startsWith('degree_progression') || isEarTrainingMode || document.getElementById('practice-type').value === 'interval_build') { drawNotesOnStave('vexflow-canvas', Array.from(activeKeys), currentClef, currentUseFlats); }
                                 currentTargetNotes = []; setTimeout(() => generateQuestion(false), 1500);
@@ -724,6 +771,119 @@
                 }
             }
         }
+
+        // --- 9. 學習路徑 (Learning Path) ---
+        const PATH_STAGES = [
+            { id: 'read', icon: '🎼', title: '認識五線譜', desc: '先學會看懂音符在鍵盤上的位置', items: [
+                { type: 'single_treble', label: '高音譜號 (右手)' },
+                { type: 'single_bass', label: '低音譜號 (左手)' }
+            ]},
+            { id: 'scale', icon: '🎵', title: '音階基礎', desc: '建立大調與小調音階的手指記憶', items: [
+                { type: 'scale_major', label: '大調音階' },
+                { type: 'scale_natural_minor', label: '自然小調音階' },
+                { type: 'scale_harmonic_minor', label: '和聲小調音階' }
+            ]},
+            { id: 'interval', icon: '📏', title: '音程訓練', desc: '學會推算與聽辨兩音之間的距離', items: [
+                { type: 'interval_build', label: '音程推算' },
+                { type: 'interval_ear_harmonic', label: '音程盲聽 (和聲)' },
+                { type: 'interval_ear_melodic', label: '音程盲聽 (旋律)' }
+            ]},
+            { id: 'triad', icon: '🎹', title: '三和弦', desc: '最基本的和弦組成與指法', items: [
+                { type: 'chord_major', label: '大三和弦' },
+                { type: 'chord_minor', label: '小三和弦' }
+            ]},
+            { id: 'seventh', icon: '✨', title: '七和弦與延伸', desc: '進階和弦色彩與雙手分配', items: [
+                { type: 'chord_maj7', label: '大七和弦' },
+                { type: 'chord_dom7', label: '屬七和弦' },
+                { type: 'chord_min7', label: '小七和弦' },
+                { type: 'chord_add9', label: '加九和弦' },
+                { type: 'chord_dom9', label: '屬九和弦' }
+            ]},
+            { id: 'arpeggio', icon: '🤲', title: '琶音雙手指法', desc: '分解和弦，訓練雙手協調', items: [
+                { type: 'arp_major', label: '大三和弦琶音' },
+                { type: 'arp_minor', label: '小三和弦琶音' },
+                { type: 'arp_maj7', label: '大七和弦琶音' },
+                { type: 'arp_dom7', label: '屬七和弦琶音' }
+            ]},
+            { id: 'degree', icon: '🔢', title: '級數推算', desc: '看懂流行歌曲的和弦進行', items: [
+                { type: 'degree_progression', label: '三和弦級數' },
+                { type: 'degree_progression_7', label: '七和弦級數' }
+            ]},
+            { id: 'ear', icon: '👂', title: '聽力訓練', desc: '不看譜，純粹用耳朵判斷', items: [
+                { type: 'ear_single', label: '單音聽辨' },
+                { type: 'ear_chord_major', label: '大三和弦聽辨' },
+                { type: 'ear_chord_minor', label: '小三和弦聽辨' }
+            ]}
+        ];
+        const MASTERY_TARGET = 5; // 每個項目需連續累積答對次數才算過關
+
+        let pathProgress = JSON.parse(localStorage.getItem('musicAppPathProgress')) || {};
+        function savePathProgress() { localStorage.setItem('musicAppPathProgress', JSON.stringify(pathProgress)); }
+        function recordPathProgress(type) {
+            if (!type) return;
+            pathProgress[type] = (pathProgress[type] || 0) + 1; savePathProgress();
+            if (document.getElementById('tab-path').classList.contains('active')) renderPathTrack();
+        }
+        function isItemMastered(type) { return (pathProgress[type] || 0) >= MASTERY_TARGET; }
+        function isStageMastered(stage) { return stage.items.every(it => isItemMastered(it.type)); }
+        function getStageState(index) {
+            const prevDone = PATH_STAGES.slice(0, index).every(s => isStageMastered(s));
+            if (!prevDone) return 'locked';
+            return isStageMastered(PATH_STAGES[index]) ? 'done' : 'active';
+        }
+
+        function startPathItem(type) {
+            document.getElementById('practice-type').value = type;
+            document.getElementById('target-root-selector').value = 'random';
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelector('.tab-btn[data-target="tab-practice"]').classList.add('active');
+            document.getElementById('tab-practice').classList.add('active');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            (async () => {
+                if (!isAudioUnlocked) { document.getElementById('audio-btn').click(); await new Promise(r => setTimeout(r, 150)); }
+                if (isPreviewMode) document.getElementById('preview-btn').click();
+                if (!isPracticeMode) document.getElementById('practice-btn').click();
+                else { generateQuestion(false); }
+            })();
+        }
+
+        function renderPathTrack() {
+            const track = document.getElementById('path-track'); if (!track) return; track.innerHTML = '';
+            let resumeType = null, resumeStage = null;
+            PATH_STAGES.forEach((stage, index) => {
+                const state = getStageState(index);
+                if (!resumeType && state === 'active') { const next = stage.items.find(it => !isItemMastered(it.type)); if (next) { resumeType = next.type; resumeStage = stage; } }
+                const doneCount = stage.items.filter(it => isItemMastered(it.type)).length;
+                const node = document.createElement('div'); node.className = `path-node path-${state}`;
+                const itemsHtml = stage.items.map(it => {
+                    const cnt = Math.min(pathProgress[it.type] || 0, MASTERY_TARGET); const mastered = cnt >= MASTERY_TARGET;
+                    return `<div class="path-item ${mastered ? 'mastered' : ''} ${state === 'locked' ? 'disabled' : ''}" data-type="${it.type}">
+                        <span class="path-item-dot">${mastered ? '✓' : ''}</span>
+                        <span class="path-item-label">${it.label}</span>
+                        <span class="path-item-count">${cnt}/${MASTERY_TARGET}</span>
+                    </div>`;
+                }).join('');
+                node.innerHTML = `
+                    <div class="path-node-head">
+                        <span class="path-node-icon">${state === 'done' ? '🏆' : state === 'locked' ? '🔒' : stage.icon}</span>
+                        <div class="path-node-title-wrap"><h4>${index + 1}. ${stage.title}</h4><p>${stage.desc}</p></div>
+                        <span class="path-node-progress">${doneCount}/${stage.items.length}</span>
+                    </div>
+                    <div class="path-node-bar"><div class="path-node-bar-fill" style="width:${(doneCount / stage.items.length) * 100}%"></div></div>
+                    <div class="path-items">${itemsHtml}</div>`;
+                track.appendChild(node);
+            });
+            track.querySelectorAll('.path-item:not(.disabled)').forEach(el => el.addEventListener('click', () => startPathItem(el.dataset.type)));
+            const banner = document.getElementById('path-resume-banner');
+            if (resumeType) {
+                const item = resumeStage.items.find(it => it.type === resumeType);
+                banner.style.display = 'flex';
+                banner.querySelector('.path-resume-text').textContent = `繼續：${resumeStage.title} — ${item.label}`;
+                banner.querySelector('.path-resume-btn').onclick = () => startPathItem(resumeType);
+            } else { banner.style.display = 'none'; }
+        }
+        renderPathTrack();
 
         if (navigator.requestMIDIAccess) {
             navigator.requestMIDIAccess({ sysex: false }).then((midiAccess) => {
