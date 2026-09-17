@@ -141,6 +141,8 @@
         .path-item-dot { width: 16px; height: 16px; border-radius: 50%; background: rgba(0,0,0,0.08); display: inline-flex; align-items: center; justify-content: center; font-size: 10px; color: var(--sage-dark); flex-shrink: 0; }
         .path-item.mastered .path-item-dot { background: var(--sage); color: #fff; }
         .path-item-count { color: #a1b0a7; font-weight: 600; }
+        .path-item.needs-review { background: rgba(196,153,135,0.22); color: #96633f; }
+        .corrective-tip { margin-top: 10px; font-size: 13px; color: #96633f; background: rgba(196,153,135,0.15); border: 1px solid rgba(196,153,135,0.3); border-radius: 10px; padding: 8px 16px; text-align: center; max-width: 420px; }
     </style>
 </head>
 <body>
@@ -217,6 +219,8 @@
 
                         <label>練習項目:</label>
                         <select id="practice-type">
+                            <option disabled>── 🖐️ 哈農手指練習 (Hanon) ──</option>
+                            <option value="hanon_1">哈農 第1條 (基礎指力／伸展練習)</option>
                             <option disabled>── 和弦與指法判定練習 ──</option>
                             <option value="chord_major">大三和弦 (Major)</option>
                             <option value="chord_minor">小三和弦 (Minor)</option>
@@ -270,6 +274,7 @@
                 <div id="vexflow-canvas"></div>
                 <div id="hint-box" class="hint-box"></div>
                 <div id="feedback-msg" class="feedback-msg msg-waiting">自由彈奏模式 (可自動偵測延伸和弦)</div>
+                <div id="corrective-tip" class="corrective-tip" style="display:none;"></div>
                 <div id="active-keys-display">目前按住: 無</div>
             </div>
         </div>
@@ -458,6 +463,24 @@
         }
 
         const flatRoots = [5, 10, 3, 8, 1, 6]; 
+
+        // --- 哈農手指練習 (Hanon, Part I) ---
+        // 取自公版樂譜 IMSLP #91547（The Virtuoso Pianist, C. L. Hanon, 1873，已進入公共領域）。
+        // 為配合 25 鍵 MIDI 鍵盤（剛好 C4-C6 兩個八度），此處改為「右手單手、上行後原音反向下行」的簡化版本，
+        // 保留原曲最具代表性的核心音型（cell）與指法，方便學生在單一鍵盤上完整練習到底。
+        function cMajorDiatonic(step) { // step: 0 = C4, 1 = D4 ... 純白鍵音階，無升降記號
+            const octave = Math.floor(step / 7); const degree = ((step % 7) + 7) % 7;
+            const semitoneOffsets = [0, 2, 4, 5, 7, 9, 11]; return 60 + octave * 12 + semitoneOffsets[degree];
+        }
+        function buildHanonSequence(cellOffsets, topStep) { // 由 C4 (step 0) 上行到 topStep，再原路下行回 C4
+            const ascending = [];
+            for (let root = 0; root <= topStep; root++) { cellOffsets.forEach(off => ascending.push(cMajorDiatonic(root + off))); }
+            const descending = ascending.slice(0, -1).reverse();
+            return ascending.concat(descending);
+        }
+        const HANON_EXERCISES = {
+            hanon_1: { title: '哈農 第1條', desc: '伸展與敏捷度：加強手指獨立與均勻', cellOffsets: [0, 2, 3, 4, 5, 4, 3, 2], topStep: 9, fingerHint: 'R: 1-2-3-4-5-4-3-2（反覆上行至最高音後，原型下行回到 C4）' }
+        };
         
         // --- 6. 級數推算字典 ---
         const scalesFormula = {
@@ -559,9 +582,10 @@
         }
 
         function generateQuestion(isPreview = false) {
+            const correctiveTip = document.getElementById('corrective-tip'); if (correctiveTip) correctiveTip.style.display = 'none';
             const type = document.getElementById('practice-type').value; const incBlack = document.getElementById('include-black-keys').checked; const targetRootVal = document.getElementById('target-root-selector').value;
             
-            isSequentialMode = type.startsWith('scale_') || type.startsWith('arp_') || type === 'interval_ear_melodic'; 
+            isSequentialMode = type.startsWith('scale_') || type.startsWith('arp_') || type === 'interval_ear_melodic' || type.startsWith('hanon_'); 
             sequenceProgress = 0; currentClef = 'treble'; currentUseFlats = false; 
             isEarTrainingMode = type.startsWith('ear_') || type.startsWith('interval_ear');
             
@@ -575,8 +599,16 @@
             let intervals = []; let title = ""; let fingering = "";
             if (targetRootVal !== 'random') { currentUseFlats = flatRoots.includes(parseInt(targetRootVal) % 12); } else { currentUseFlats = Math.random() > 0.5; }
 
+            // 0. 哈農手指練習
+            if (type.startsWith('hanon_')) {
+                const ex = HANON_EXERCISES[type]; currentClef = 'treble'; currentUseFlats = false;
+                currentTargetNotes = buildHanonSequence(ex.cellOffsets, ex.topStep);
+                document.getElementById('hint-box').innerHTML = `💡 <b>${ex.title}</b><br>${ex.desc}（固定以 C 大調練習，符合原版教材）<br>📝 請依指法「單音」依序彈奏，建議先從節拍器 60 開始，熟練後漸漸加速到 108。<br><div class="fingering-text">${ex.fingerHint}</div><div class="voicing-hint">第一個音：${getNoteName(currentTargetNotes[0], false)}　共 ${currentTargetNotes.length} 音（上行到頂後自動反向下行）</div>`;
+                document.getElementById('hint-box').style.display = 'block';
+                if (isPreview) drawMelodyOnStave('vexflow-canvas', currentTargetNotes.slice(0, 16), currentClef, false); else drawNotesOnStave('vexflow-canvas', [currentTargetNotes[0]], currentClef, false);
+            }
             // 1. 音程特訓
-            if (type.startsWith('interval_')) {
+            else if (type.startsWith('interval_')) {
                 let pool = treblePool; let rootNote;
                 if (targetRootVal !== 'random') rootNote = parseInt(targetRootVal); else rootNote = pool.filter(n => n <= 64)[Math.floor(Math.random() * pool.filter(n => n <= 64).length)];
                 currentUseFlats = flatRoots.includes(rootNote % 12);
@@ -735,21 +767,26 @@
                     } else {
                         if (isSequentialMode) {
                             if (note === currentTargetNotes[sequenceProgress]) {
-                                sequenceProgress++; document.getElementById('feedback-msg').textContent = `✅ 彈奏正確 (${sequenceProgress}/${currentTargetNotes.length})...`; document.getElementById('feedback-msg').className = "msg-correct";
+                                sequenceProgress++;
+                                const seqType = document.getElementById('practice-type').value;
+                                let seqMsg = `✅ 彈奏正確 (${sequenceProgress}/${currentTargetNotes.length})...`;
+                                if (seqType.startsWith('hanon_') && sequenceProgress < currentTargetNotes.length) { seqMsg += ` 下一音：${getNoteName(currentTargetNotes[sequenceProgress], false)}`; }
+                                document.getElementById('feedback-msg').textContent = seqMsg; document.getElementById('feedback-msg').className = "msg-correct";
                                 if (sequenceProgress === currentTargetNotes.length) {
-                                    streak++; document.getElementById('streak-display').textContent = streak; saveStats(streak); recordPathProgress(document.getElementById('practice-type').value);
+                                    streak++; document.getElementById('streak-display').textContent = streak; saveStats(streak); recordPathResult(document.getElementById('practice-type').value, true);
                                     document.getElementById('feedback-msg').textContent = "✨ 彈奏完美！準備下一題..."; currentTargetNotes = []; setTimeout(() => generateQuestion(false), 1500);
                                 }
-                            } else { sequenceProgress = 0; streak = 0; document.getElementById('streak-display').textContent = streak; document.getElementById('feedback-msg').textContent = "❌ 彈錯了！請從第一個音重新開始。"; document.getElementById('feedback-msg').className = "msg-error"; }
+                            } else { sequenceProgress = 0; streak = 0; document.getElementById('streak-display').textContent = streak; document.getElementById('feedback-msg').textContent = "❌ 彈錯了！請從第一個音重新開始。"; document.getElementById('feedback-msg').className = "msg-error"; recordPathResult(document.getElementById('practice-type').value, false); }
                         } else if (currentTargetNotes.length > 0 && activeKeys.size === currentTargetNotes.length) {
                             const targetNoteNames = currentTargetNotes.map(n => n % 12).sort(); const activeNoteNames = Array.from(activeKeys).map(n => n % 12).sort();
                             const isMatch = targetNoteNames.every((val, index) => val === activeNoteNames[index]);
                             if (isMatch) {
-                                streak++; document.getElementById('streak-display').textContent = streak; saveStats(streak); recordPathProgress(document.getElementById('practice-type').value);
+                                streak++; document.getElementById('streak-display').textContent = streak; saveStats(streak); recordPathResult(document.getElementById('practice-type').value, true);
                                 document.getElementById('feedback-msg').textContent = "✨ 判定正確！"; document.getElementById('feedback-msg').className = "msg-correct";
                                 if (document.getElementById('practice-type').value.startsWith('degree_progression') || isEarTrainingMode || document.getElementById('practice-type').value === 'interval_build') { drawNotesOnStave('vexflow-canvas', Array.from(activeKeys), currentClef, currentUseFlats); }
                                 currentTargetNotes = []; setTimeout(() => generateQuestion(false), 1500);
-                            } else if (isEarTrainingMode) { document.getElementById('feedback-msg').textContent = "❌ 音不對喔，仔細聽重播試試看！"; document.getElementById('feedback-msg').className = "msg-error"; }
+                            } else if (isEarTrainingMode) { document.getElementById('feedback-msg').textContent = "❌ 音不對喔，仔細聽重播試試看！"; document.getElementById('feedback-msg').className = "msg-error"; recordPathResult(document.getElementById('practice-type').value, false); }
+                            else { document.getElementById('feedback-msg').textContent = "❌ 音符組合不太對，再檢查一次！"; document.getElementById('feedback-msg').className = "msg-error"; recordPathResult(document.getElementById('practice-type').value, false); }
                         }
                     }
                 }
@@ -774,6 +811,9 @@
 
         // --- 9. 學習路徑 (Learning Path) ---
         const PATH_STAGES = [
+            { id: 'hanon', icon: '🖐️', title: '手指暖身 (Hanon)', desc: '每次練習前的指力與敏捷度暖身', items: [
+                { type: 'hanon_1', label: '哈農 第1條', target: 2 }
+            ]},
             { id: 'read', icon: '🎼', title: '認識五線譜', desc: '先學會看懂音符在鍵盤上的位置', items: [
                 { type: 'single_treble', label: '高音譜號 (右手)' },
                 { type: 'single_bass', label: '低音譜號 (左手)' }
@@ -815,16 +855,41 @@
                 { type: 'ear_chord_minor', label: '小三和弦聽辨' }
             ]}
         ];
-        const MASTERY_TARGET = 5; // 每個項目需連續累積答對次數才算過關
+        // 精熟學習 (Mastery Learning) 設計：
+        // 1. 明確精熟標準：需「連續」答對達標次數才算過關，中途答錯會重新累計（而非單純累積答對次數，避免僥倖通過）
+        // 2. 形成性評量：每一題都即時記錄對錯，而非只看單元結束後的成績
+        // 3. 校正回饋：連續答錯達門檻時，主動提示可先「預覽」正確答案再重新練習（補救教學）
+        // 4. 間隔複習：已精熟但一段時間沒練的項目會標記「🔁 複習」，避免遺忘
+        const MASTERY_TARGET = 5;      // 需連續答對幾次才算精熟過關（預設值）
+        const REVIEW_AFTER_DAYS = 10;  // 精熟後超過幾天沒練習，提示複習
+        const ITEM_TARGET = {};        // 個別項目可覆寫預設精熟門檻（例如較長的哈農練習）
+        PATH_STAGES.forEach(s => s.items.forEach(it => { ITEM_TARGET[it.type] = it.target || MASTERY_TARGET; }));
+        function targetFor(type) { return ITEM_TARGET[type] || MASTERY_TARGET; }
 
         let pathProgress = JSON.parse(localStorage.getItem('musicAppPathProgress')) || {};
+        // 相容舊版資料格式（舊版只存一個數字）
+        Object.keys(pathProgress).forEach(k => {
+            if (typeof pathProgress[k] === 'number') { pathProgress[k] = { streak: Math.min(pathProgress[k], targetFor(k)), missStreak: 0, lastPracticedAt: Date.now() }; }
+        });
         function savePathProgress() { localStorage.setItem('musicAppPathProgress', JSON.stringify(pathProgress)); }
-        function recordPathProgress(type) {
+        function getItemProgress(type) { if (!pathProgress[type]) pathProgress[type] = { streak: 0, missStreak: 0, lastPracticedAt: 0 }; return pathProgress[type]; }
+        function recordPathResult(type, correct) {
             if (!type) return;
-            pathProgress[type] = (pathProgress[type] || 0) + 1; savePathProgress();
+            const p = getItemProgress(type); p.lastPracticedAt = Date.now();
+            const tip = document.getElementById('corrective-tip');
+            if (correct) {
+                p.streak = Math.min((p.streak || 0) + 1, targetFor(type)); p.missStreak = 0;
+                if (tip) tip.style.display = 'none';
+            } else {
+                p.streak = 0; p.missStreak = (p.missStreak || 0) + 1;
+                if (tip && p.missStreak >= 2) { tip.style.display = 'block'; tip.textContent = '💡 已經卡關幾次了，可以先按「👀 預覽」看正確答案，熟悉之後再重新練習一次。'; }
+            }
+            savePathProgress();
             if (document.getElementById('tab-path').classList.contains('active')) renderPathTrack();
+            return p;
         }
-        function isItemMastered(type) { return (pathProgress[type] || 0) >= MASTERY_TARGET; }
+        function isItemMastered(type) { return !!(pathProgress[type] && pathProgress[type].streak >= targetFor(type)); }
+        function itemNeedsReview(type) { const p = pathProgress[type]; if (!p || p.streak < targetFor(type) || !p.lastPracticedAt) return false; return (Date.now() - p.lastPracticedAt) / 86400000 > REVIEW_AFTER_DAYS; }
         function isStageMastered(stage) { return stage.items.every(it => isItemMastered(it.type)); }
         function getStageState(index) {
             const prevDone = PATH_STAGES.slice(0, index).every(s => isStageMastered(s));
@@ -857,11 +922,12 @@
                 const doneCount = stage.items.filter(it => isItemMastered(it.type)).length;
                 const node = document.createElement('div'); node.className = `path-node path-${state}`;
                 const itemsHtml = stage.items.map(it => {
-                    const cnt = Math.min(pathProgress[it.type] || 0, MASTERY_TARGET); const mastered = cnt >= MASTERY_TARGET;
-                    return `<div class="path-item ${mastered ? 'mastered' : ''} ${state === 'locked' ? 'disabled' : ''}" data-type="${it.type}">
-                        <span class="path-item-dot">${mastered ? '✓' : ''}</span>
+                    const target = targetFor(it.type); const cnt = Math.min((pathProgress[it.type] && pathProgress[it.type].streak) || 0, target);
+                    const mastered = cnt >= target; const needsReview = itemNeedsReview(it.type);
+                    return `<div class="path-item ${mastered ? 'mastered' : ''} ${needsReview ? 'needs-review' : ''} ${state === 'locked' ? 'disabled' : ''}" data-type="${it.type}">
+                        <span class="path-item-dot">${needsReview ? '🔁' : (mastered ? '✓' : '')}</span>
                         <span class="path-item-label">${it.label}</span>
-                        <span class="path-item-count">${cnt}/${MASTERY_TARGET}</span>
+                        <span class="path-item-count">${cnt}/${target}</span>
                     </div>`;
                 }).join('');
                 node.innerHTML = `
